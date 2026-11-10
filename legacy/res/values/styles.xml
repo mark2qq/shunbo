@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 只用系统内置主题（API 1 起就有），不引 AppCompat / support 库，
+         避免给 API 18 带来任何额外依赖与 dex 体积。 -->
+    <style name="AppTheme" parent="@android:style/Theme.Black.NoTitleBar.Fullscreen">
+        <item name="android:windowBackground">@android:color/black</item>
+        <item name="android:windowNoTitle">true</item>
+    </style>
+</resources>

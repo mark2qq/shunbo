@@ -1,0 +1,1109 @@
+{
+  "format": "shunbo-plaintext-mirrors/1",
+  "probedAt": "2026-11-09T04:17:17.952822Z",
+  "source": "legacy/assets/channels.json",
+  "method": "same-path https->http, m3u8 2xx + first segment 2xx (PC side)",
+  "params": {
+    "concurrency": 8,
+    "timeoutSeconds": 8,
+    "limit": null
+  },
+  "candidateChannels": 408,
+  "candidateUrls": 576,
+  "probedUrls": 576,
+  "verifiedCount": 182,
+  "mirrors": [
+    {
+      "httpsUrl": "https://12371wbndali.v.myalicdn.com/12371wbnd/dangyuanwang_2hd.m3u8",
+      "httpUrl": "http://12371wbndali.v.myalicdn.com/12371wbnd/dangyuanwang_2hd.m3u8",
+      "probeMs": 149,
+      "segmentBytes": 65536
+    },
+    {
+      "httpsUrl": "https://29371.hlsplay.aodianyun.com/lms_29371/slow_channel_master_seat_1445826801.m3u8?auth_key=3300411293-0-0-273f15e1d217965ba192be222ea38b2d&extra_key=V8uEmh_EXr1eVHhCsqQdCb2KQpy3kbF4Lfrf1S8rAZfBbea83rMZ6uqfZL74iDr9sfX_YL2E_25HrvU_mbtZh3ifdtd3R0IP_tWpoeTaMP3EUgp-m3whWwmoBhHzmq7QlJkExjuwjfwj_lLUpyUtp6oiMrocqaUoGIgnjsNh9WM",
+      "httpUrl": "http://29371.hlsplay.aodianyun.com/lms_29371/slow_channel_master_seat_1445826801.m3u8?auth_key=3300411293-0-0-273f15e1d217965ba192be222ea38b2d&extra_key=V8uEmh_EXr1eVHhCsqQdCb2KQpy3kbF4Lfrf1S8rAZfBbea83rMZ6uqfZL74iDr9sfX_YL2E_25HrvU_mbtZh3ifdtd3R0IP_tWpoeTaMP3EUgp-m3whWwmoBhHzmq7QlJkExjuwjfwj_lLUpyUtp6oiMrocqaUoGIgnjsNh9WM",
+      "probeMs": 292,
+      "segmentBytes": 65536
+    },
+    {
+      "httpsUrl": "https://31666.hlsplay.aodianyun.com/tv_radio_31666/tv_channel_3566.m3u8?auth_key=4867613167-0-0-7e4d136d59c046f779f0c50461de5fe5&extra_key=ZsnRdSSZsd_55ssIU7GXV9vL2bVgmdCUfbd0zhEWRYtF1fIJa_P34oEH8HVCgRtNY3GLWcIgRP1lO0kocw3d7cCCfJYKu980fDypjkFzkHzqrB4amtUEsglZvsGvzYzoDZyioKwM9H2EUg0PFXBSWFJ1WyLLQNoQey-Q6kSGklw",
+      "httpUrl": "http://31666.hlsplay.aodianyun.com/tv_radio_31666/tv_channel_3566.m3u8?auth_key=4867613167-0-0-7e4d136d59c046f779f0c50461de5fe5&extra_key=ZsnRdSSZsd_55ssIU7GXV9vL2bVgmdCUfbd0zhEWRYtF1fIJa_P34oEH8HVCgRtNY3GLWcIgRP1lO0kocw3d7cCCfJYKu980fDypjkFzkHzqrB4amtUEsglZvsGvzYzoDZyioKwM9H2EUg0PFXBSWFJ1WyLLQNoQey-Q6kSGklw",
+      "probeMs": 441,
+      "segmentBytes": 65536
+    },
+    {
+      "httpsUrl": "https://46240.hlsplay.aodianyun.com/tv_radio_46240/tv_channel_1811.m3u8?auth_key=4857760464-0-0-ecabcbf26d39dc20cde584db2fa2a053&extra_key=D1dJezG95YTkYytoe8tr2Qhf-jhFFJmJpij9JNzLnfjYgxE5Q69rjZT1b2VrOxeb2zvhRo107e0Ze_h5agVjcLhNxl4RzjBShtdz-pQKUqaNbHnJMUJaS637QCoHNkKlJAb5i0lkR8MlxmIB6LIGojFm8kqvpZp_pI7SG10olDg",
+      "httpUrl": "http://46240.hlsplay.aodianyun.com/tv_radio_46240/tv_channel_1811.m3u8?auth_key=4857760464-0-0-ecabcbf26d39dc20cde584db2fa2a053&extra_key=D1dJezG95YTkYytoe8tr2Qhf-jhFFJmJpij9JNzLnfjYgxE5Q69rjZT1b2VrOxeb2zvhRo107e0Ze_h5agVjcLhNxl4RzjBShtdz-pQKUqaNbHnJMUJaS637QCoHNkKlJAb5i0lkR8MlxmIB6LIGojFm8kqvpZp_pI7SG10olDg",
+      "probeMs": 291,
+      "segmentBytes": 65536
+    },
+    {
+      "httpsUrl": "https://46240.hlsplay.aodianyun.com/tv_radio_46240/tv_channel_3567.m3u8?auth_key=4867549325-0-0-cc7ce201270f1bfda8bd5c54e0e5739c&extra_key=hKfYhS2z6614oV0yCs-AFVt7IpvlJJgoGCHOij1q2onFz-Yr5Us2Cd41rIlv4l1XjWrMXCVgYMdOmrNAgjF2W_2a6vxf1HxtHHoYEC6BCIqSeo4VGtaHFxadD2xtzAtmsjFPKB3DP_Ev_ci_KC8TQllAks-AnwmJWoohc4XLA6Q",
+      "httpUrl": "http://46240.hlsplay.aodianyun.com/tv_radio_46240/tv_channel_3567.m3u8?auth_key=4867549325-0-0-cc7ce201270f1bfda8bd5c54e0e5739c&extra_key=hKfYhS2z6614oV0yCs-AFVt7IpvlJJgoGCHOij1q2onFz-Yr5Us2Cd41rIlv4l1XjWrMXCVgYMdOmrNAgjF2W_2a6vxf1HxtHHoYEC6BCIqSeo4VGtaHFxadD2xtzAtmsjFPKB3DP_Ev_ci_KC8TQllAks-AnwmJWoohc4XLA6Q",
+      "probeMs": 215,
+      "segmentBytes": 65536
+    },
+    {
+      "httpsUrl": "https://83awgyp5.live.sxmty.com/live/hls/6f6f4b36f9bd42628b718b595ba507ed/724b7e8907a8414d873eb2a2f69bfa18.m3u8",
+      "httpUrl": "http://83awgyp5.live.sxmty.com/live/hls/6f6f4b36f9bd42628b718b595ba507ed/724b7e8907a8414d873eb2a2f69bfa18.m3u8",
+      "probeMs": 198,
+      "segmentBytes": 571
+    },
+    {
+      "httpsUrl": "https://ali-m-l.cztv.com/channels/lantian/channel002/1080p.m3u8",
+      "httpUrl": "http://ali-m-l.cztv.com/channels/lantian/channel002/1080p.m3u8",
+      "probeMs": 54,
+      "segmentBytes": 65536
+    },
+    {
+      "httpsUrl": "https://ali-m-l.cztv.com/channels/lantian/channel003/1080p.m3u8",
+      "httpUrl": "http://ali-m-l.cztv.com/channels/lantian/channel003/1080p.m3u8",
+      "probeMs": 72,
+      "segmentBytes": 65536
+    },
+    {
+      "httpsUrl": "https://ali-m-l.cztv.com/channels/lantian/channel004/1080p.m3u8",
+      "httpUrl": "http://ali-m-l.cztv.com/channels/lantian/channel004/1080p.m3u8",
+      "probeMs": 62,
+      "segmentBytes": 65536
+    },
+    {
+      "httpsUrl": "https://ali-m-l.cztv.com/channels/lantian/channel006/1080p.m3u8",
+      "httpUrl": "http://ali-m-l.cztv.com/channels/lantian/channel006/1080p.m3u8",
+      "probeMs": 58,
+      "segmentBytes": 65536
+    },
+    {
+      "httpsUrl": "https://ali-m-l.cztv.com/channels/lantian/channel012/1080p.m3u8",
+      "httpUrl": "http://ali-m-l.cztv.com/channels/lantian/channel012/1080p.m3u8",
+      "probeMs": 61,
+      "segmentBytes": 65536
+    },
+    {
+      "httpsUrl": "https://ali-m-l.cztv.com/channels/lantian/channel10/1080p.m3u8",
+      "httpUrl": "http://ali-m-l.cztv.com/channels/lantian/channel10/1080p.m3u8",
+      "probeMs": 31,
+      "segmentBytes": 65536
+    },
+    {
+      "httpsUrl": "https://amg00405-rakutentv-cgtndocumentary-rakuten-0ql8j.amagi.tv/master.m3u8",
+      "httpUrl": "http://amg00405-rakutentv-cgtndocumentary-rakuten-0ql8j.amagi.tv/master.m3u8",
+      "probeMs": 993,
+      "segmentBytes": 563
+    },
+    {
+      "httpsUrl": "https://apisave.jxnn.cn/hls/xwzonhe/playlist.m3u8",
+      "httpUrl": "http://apisave.jxnn.cn/hls/xwzonhe/playlist.m3u8",
+      "probeMs": 511,
+      "segmentBytes": 70758
+    },
+    {
+      "httpsUrl": "https://cd-live-stream.news.cctvplus.com/live/smil:CHANNEL1.smil/playlist.m3u8",
+      "httpUrl": "http://cd-live-stream.news.cctvplus.com/live/smil:CHANNEL1.smil/playlist.m3u8",
+      "probeMs": 753,
+      "segmentBytes": 275
+    },
+    {
+      "httpsUrl": "https://cd-live-stream.news.cctvplus.com/live/smil:CHANNEL2.smil/playlist.m3u8",
+      "httpUrl": "http://cd-live-stream.news.cctvplus.com/live/smil:CHANNEL2.smil/playlist.m3u8",
+      "probeMs": 850,
+      "segmentBytes": 286
+    },
+    {
+      "httpsUrl": "https://cdn.pishow.tv/ott/live/453/master.m3u8",
+      "httpUrl": "http://cdn.pishow.tv/ott/live/453/master.m3u8",
+      "probeMs": 1087,
+      "segmentBytes": 570
+    },
+    {
+      "httpsUrl": "https://d2lp2ch2.live.sxmty.com/live/hls/dd05b3d63074444abe815913a24d3a35/4c59b61fb67f4a45b7fa1f8416b9fffb-1.m3u8",
+      "httpUrl": "http://d2lp2ch2.live.sxmty.com/live/hls/dd05b3d63074444abe815913a24d3a35/4c59b61fb67f4a45b7fa1f8416b9fffb-1.m3u8",
+      "probeMs": 314,
+      "segmentBytes": 65536
+    },
+    {
+      "httpsUrl": "https://d3e05csss9c272.cloudfront.net/out/v1/f0bf71c57581470fb9379f603e8f5d83/CGNWebLiveCN.m3u8",
+      "httpUrl": "http://d3e05csss9c272.cloudfront.net/out/v1/f0bf71c57581470fb9379f603e8f5d83/CGNWebLiveCN.m3u8",
+      "probeMs": 1144,
+      "segmentBytes": 664
+    },
+    {
+      "httpsUrl": "https://english-liveali.cgtn.com/hls/yypdjlctzb/playlist.m3u8",
+      "httpUrl": "http://english-liveali.cgtn.com/hls/yypdjlctzb/playlist.m3u8",
+      "probeMs": 255,
+      "segmentBytes": 379
+    },
+    {
+      "httpsUrl": "https://english-liveali.cgtn.com/hls/yypdjlctzb/yypdjlctzbcd/playlist.m3u8",
+      "httpUrl": "http://english-liveali.cgtn.com/hls/yypdjlctzb/yypdjlctzbcd/playlist.m3u8",
+      "probeMs": 76,
+      "segmentBytes": 65536
+    },
+    {
+      "httpsUrl": "https://english-liveali.cgtn.com/hls/yypdjlctzb/yypdjlctzbhd/playlist.m3u8",
+      "httpUrl": "http://english-liveali.cgtn.com/hls/yypdjlctzb/yypdjlctzbhd/playlist.m3u8",
+      "probeMs": 142,
+      "segmentBytes": 65536
+    },
+    {
+      "httpsUrl": "https://english-livebkali.cgtn.com/live/doccgtn_0.m3u8",
+      "httpUrl": "http://english-livebkali.cgtn.com/live/doccgtn_0.m3u8",
+      "probeMs": 118,
+      "segmentBytes": 65536
+    },
+    {
+      "httpsUrl": "https://english-livebkali.cgtn.com/live/encgtn_0.m3u8",
+      "httpUrl": "http://english-livebkali.cgtn.com/live/encgtn_0.m3u8",
+      "probeMs": 62,
+      "segmentBytes": 65536
+    },
+    {
+      "httpsUrl": "https://event.pull.hebtv.com:443/live/live101.m3u8",
+      "httpUrl": "http://event.pull.hebtv.com/live/live101.m3u8",
+      "probeMs": 144,
+      "segmentBytes": 65536
+    },
+    {
+      "httpsUrl": "https://f3jok3az.live.sxmty.com/live/hls/ebaa2bf2e7f94dc79d4e642ac76d2415/0d97361a940348729fbd0ee3f4eb9e47.m3u8",
+      "httpUrl": "http://f3jok3az.live.sxmty.com/live/hls/ebaa2bf2e7f94dc79d4e642ac76d2415/0d97361a940348729fbd0ee3f4eb9e47.m3u8",
+      "probeMs": 266,
+      "segmentBytes": 448
+    },
+    {
+      "httpsUrl": "https://fastlive.cctvplus.com/out/v1/2b3d8a0c805d437f9dc85b764c2ac599/index.m3u8",
+      "httpUrl": "http://fastlive.cctvplus.com/out/v1/2b3d8a0c805d437f9dc85b764c2ac599/index.m3u8",
+      "probeMs": 847,
+      "segmentBytes": 632
+    },
+    {
+      "httpsUrl": "https://fastlive.cctvplus.com/out/v1/8442c3bfd4c64a3984389328f6087879/index.m3u8",
+      "httpUrl": "http://fastlive.cctvplus.com/out/v1/8442c3bfd4c64a3984389328f6087879/index.m3u8",
+      "probeMs": 758,
+      "segmentBytes": 632
+    },
+    {
+      "httpsUrl": "https://fastlive.cctvplus.com/out/v1/ca6f9297b7314a63959435028af287fc/index.m3u8",
+      "httpUrl": "http://fastlive.cctvplus.com/out/v1/ca6f9297b7314a63959435028af287fc/index.m3u8",
+      "probeMs": 557,
+      "segmentBytes": 368
+    },
+    {
+      "httpsUrl": "https://file.ysxtv.cn/nmip-media/channellive/channel101492/playlist.m3u8",
+      "httpUrl": "http://file.ysxtv.cn/nmip-media/channellive/channel101492/playlist.m3u8",
+      "probeMs": 269,
+      "segmentBytes": 65536
+    },
+    {
+      "httpsUrl": "https://fpsfgptf.live.sxmty.com/live/hls/b41fb247f68048f893a7a1d320044ce8/790f46c0807048bf82894eaf4c88ccdb.m3u8",
+      "httpUrl": "http://fpsfgptf.live.sxmty.com/live/hls/b41fb247f68048f893a7a1d320044ce8/790f46c0807048bf82894eaf4c88ccdb.m3u8",
+      "probeMs": 249,
+      "segmentBytes": 444
+    },
+    {
+      "httpsUrl": "https://hls.nntv.cn/nnlive/WLSH_24.m3u8",
+      "httpUrl": "http://hls.nntv.cn/nnlive/WLSH_24.m3u8",
+      "probeMs": 1687,
+      "segmentBytes": 197
+    },
+    {
+      "httpsUrl": "https://hls.nntv.cn/nnlive/XWZH_24.m3u8",
+      "httpUrl": "http://hls.nntv.cn/nnlive/XWZH_24.m3u8",
+      "probeMs": 1435,
+      "segmentBytes": 197
+    },
+    {
+      "httpsUrl": "https://iswtv.swrtv.com/live/xwzhpd.m3u8",
+      "httpUrl": "http://iswtv.swrtv.com/live/xwzhpd.m3u8",
+      "probeMs": 330,
+      "segmentBytes": 65536
+    },
+    {
+      "httpsUrl": "https://iwlbdjk7.live.sxmty.com/live/hls/768ce7880a2545daac8d20a1910a399b/72b4712ef0224990ab744552c190f28c.m3u8",
+      "httpUrl": "http://iwlbdjk7.live.sxmty.com/live/hls/768ce7880a2545daac8d20a1910a399b/72b4712ef0224990ab744552c190f28c.m3u8",
+      "probeMs": 234,
+      "segmentBytes": 448
+    },
+    {
+      "httpsUrl": "https://jwcdnqx.hebyun.com.cn/live/NHTV1/1500k/tzwj_video.m3u8",
+      "httpUrl": "http://jwcdnqx.hebyun.com.cn/live/NHTV1/1500k/tzwj_video.m3u8",
+      "probeMs": 457,
+      "segmentBytes": 65536
+    },
+    {
+      "httpsUrl": "https://jwcdnqx.hebyun.com.cn/live/NHTV2/1500k/tzwj_video.m3u8",
+      "httpUrl": "http://jwcdnqx.hebyun.com.cn/live/NHTV2/1500k/tzwj_video.m3u8",
+      "probeMs": 187,
+      "segmentBytes": 65536
+    },
+    {
+      "httpsUrl": "https://jwcdnqx.hebyun.com.cn/live/SXTV1/1500k/tzwj_video.m3u8",
+      "httpUrl": "http://jwcdnqx.hebyun.com.cn/live/SXTV1/1500k/tzwj_video.m3u8",
+      "probeMs": 263,
+      "segmentBytes": 65536
+    },
+    {
+      "httpsUrl": "https://jwcdnqx.hebyun.com.cn/live/clzhpd/1500k/tzwj_video.m3u8",
+      "httpUrl": "http://jwcdnqx.hebyun.com.cn/live/clzhpd/1500k/tzwj_video.m3u8",
+      "probeMs": 217,
+      "segmentBytes": 65536
+    },
+    {
+      "httpsUrl": "https://jwcdnqx.hebyun.com.cn/live/fengningzonghe/1500k/tzwj_video.m3u8",
+      "httpUrl": "http://jwcdnqx.hebyun.com.cn/live/fengningzonghe/1500k/tzwj_video.m3u8",
+      "probeMs": 313,
+      "segmentBytes": 65536
+    },
+    {
+      "httpsUrl": "https://jwcdnqx.hebyun.com.cn/live/hdgg/1500k/tzwj_video.m3u8",
+      "httpUrl": "http://jwcdnqx.hebyun.com.cn/live/hdgg/1500k/tzwj_video.m3u8",
+      "probeMs": 190,
+      "segmentBytes": 65536
+    },
+    {
+      "httpsUrl": "https://jwcdnqx.hebyun.com.cn/live/hdkj/1500k/tzwj_video.m3u8",
+      "httpUrl": "http://jwcdnqx.hebyun.com.cn/live/hdkj/1500k/tzwj_video.m3u8",
+      "probeMs": 272,
+      "segmentBytes": 65536
+    },
+    {
+      "httpsUrl": "https://jwcdnqx.hebyun.com.cn/live/hdxwzh/1500k/tzwj_video.m3u8",
+      "httpUrl": "http://jwcdnqx.hebyun.com.cn/live/hdxwzh/1500k/tzwj_video.m3u8",
+      "probeMs": 257,
+      "segmentBytes": 65536
+    },
+    {
+      "httpsUrl": "https://jwcdnqx.hebyun.com.cn/live/jiyunxushui123/1500k/tzwj_video.m3u8",
+      "httpUrl": "http://jwcdnqx.hebyun.com.cn/live/jiyunxushui123/1500k/tzwj_video.m3u8",
+      "probeMs": 286,
+      "segmentBytes": 65536
+    },
+    {
+      "httpsUrl": "https://jwcdnqx.hebyun.com.cn/live/ngtv1/1500k/tzwj_video.m3u8",
+      "httpUrl": "http://jwcdnqx.hebyun.com.cn/live/ngtv1/1500k/tzwj_video.m3u8",
+      "probeMs": 257,
+      "segmentBytes": 65536
+    },
+    {
+      "httpsUrl": "https://jwcdnqx.hebyun.com.cn/live/pqys/1500k/tzwj_video.m3u8",
+      "httpUrl": "http://jwcdnqx.hebyun.com.cn/live/pqys/1500k/tzwj_video.m3u8",
+      "probeMs": 283,
+      "segmentBytes": 65536
+    },
+    {
+      "httpsUrl": "https://jwcdnqx.hebyun.com.cn/live/pqzh/1500k/tzwj_video.m3u8",
+      "httpUrl": "http://jwcdnqx.hebyun.com.cn/live/pqzh/1500k/tzwj_video.m3u8",
+      "probeMs": 266,
+      "segmentBytes": 65536
+    },
+    {
+      "httpsUrl": "https://jwcdnqx.hebyun.com.cn/live/qinghe1/1500k/tzwj_video.m3u8",
+      "httpUrl": "http://jwcdnqx.hebyun.com.cn/live/qinghe1/1500k/tzwj_video.m3u8",
+      "probeMs": 389,
+      "segmentBytes": 65536
+    },
+    {
+      "httpsUrl": "https://jwcdnqx.hebyun.com.cn/live/qxzhpd/1500k/tzwj_video.m3u8",
+      "httpUrl": "http://jwcdnqx.hebyun.com.cn/live/qxzhpd/1500k/tzwj_video.m3u8",
+      "probeMs": 238,
+      "segmentBytes": 65536
+    },
+    {
+      "httpsUrl": "https://jwcdnqx.hebyun.com.cn/live/qyxwpd/1500k/tzwj_video.m3u8",
+      "httpUrl": "http://jwcdnqx.hebyun.com.cn/live/qyxwpd/1500k/tzwj_video.m3u8",
+      "probeMs": 239,
+      "segmentBytes": 65536
+    },
+    {
+      "httpsUrl": "https://jwcdnqx.hebyun.com.cn/live/rqtv1/1500k/tzwj_video.m3u8",
+      "httpUrl": "http://jwcdnqx.hebyun.com.cn/live/rqtv1/1500k/tzwj_video.m3u8",
+      "probeMs": 296,
+      "segmentBytes": 65536
+    },
+    {
+      "httpsUrl": "https://jwcdnqx.hebyun.com.cn/live/slxw/1500k/tzwj_video.m3u8",
+      "httpUrl": "http://jwcdnqx.hebyun.com.cn/live/slxw/1500k/tzwj_video.m3u8",
+      "probeMs": 321,
+      "segmentBytes": 65536
+    },
+    {
+      "httpsUrl": "https://jwcdnqx.hebyun.com.cn/live/xlzh/1500k/tzwj_video.m3u8",
+      "httpUrl": "http://jwcdnqx.hebyun.com.cn/live/xlzh/1500k/tzwj_video.m3u8",
+      "probeMs": 224,
+      "segmentBytes": 65536
+    },
+    {
+      "httpsUrl": "https://l.cztvcloud.com/channels/lantian/SXshangyu1/720p.m3u8",
+      "httpUrl": "http://l.cztvcloud.com/channels/lantian/SXshangyu1/720p.m3u8",
+      "probeMs": 164,
+      "segmentBytes": 65536
+    },
+    {
+      "httpsUrl": "https://l.cztvcloud.com/channels/lantian/SXshangyu2/720p.m3u8",
+      "httpUrl": "http://l.cztvcloud.com/channels/lantian/SXshangyu2/720p.m3u8",
+      "probeMs": 127,
+      "segmentBytes": 65536
+    },
+    {
+      "httpsUrl": "https://l.cztvcloud.com/channels/lantian/SXshangyu3/720p.m3u8",
+      "httpUrl": "http://l.cztvcloud.com/channels/lantian/SXshangyu3/720p.m3u8",
+      "probeMs": 93,
+      "segmentBytes": 65536
+    },
+    {
+      "httpsUrl": "https://l.cztvcloud.com/channels/lantian/SXshengzhou1/720p.m3u8",
+      "httpUrl": "http://l.cztvcloud.com/channels/lantian/SXshengzhou1/720p.m3u8",
+      "probeMs": 88,
+      "segmentBytes": 65536
+    },
+    {
+      "httpsUrl": "https://l.cztvcloud.com/channels/lantian/SXxiaoshan2/720p.m3u8",
+      "httpUrl": "http://l.cztvcloud.com/channels/lantian/SXxiaoshan2/720p.m3u8",
+      "probeMs": 94,
+      "segmentBytes": 65536
+    },
+    {
+      "httpsUrl": "https://l.cztvcloud.com/channels/lantian/SXxinchang1/720p.m3u8",
+      "httpUrl": "http://l.cztvcloud.com/channels/lantian/SXxinchang1/720p.m3u8",
+      "probeMs": 81,
+      "segmentBytes": 65536
+    },
+    {
+      "httpsUrl": "https://l.cztvcloud.com/channels/lantian/SXxinchang2/720p.m3u8",
+      "httpUrl": "http://l.cztvcloud.com/channels/lantian/SXxinchang2/720p.m3u8",
+      "probeMs": 74,
+      "segmentBytes": 65536
+    },
+    {
+      "httpsUrl": "https://l.cztvcloud.com/channels/lantian/SXyuyao1/720p.m3u8",
+      "httpUrl": "http://l.cztvcloud.com/channels/lantian/SXyuyao1/720p.m3u8",
+      "probeMs": 57,
+      "segmentBytes": 65536
+    },
+    {
+      "httpsUrl": "https://l.cztvcloud.com/channels/lantian/SXyuyao2/720p.m3u8",
+      "httpUrl": "http://l.cztvcloud.com/channels/lantian/SXyuyao2/720p.m3u8",
+      "probeMs": 58,
+      "segmentBytes": 65536
+    },
+    {
+      "httpsUrl": "https://l.cztvcloud.com/channels/lantian/SXyuyao3/720p.m3u8",
+      "httpUrl": "http://l.cztvcloud.com/channels/lantian/SXyuyao3/720p.m3u8",
+      "probeMs": 68,
+      "segmentBytes": 65536
+    },
+    {
+      "httpsUrl": "https://l2fpdktp.live.sxmty.com/live/hls/e4c3b363cc4549788e2d983f403e07db/d99ce1eb686e41b9afc888110bd95aa7.m3u8",
+      "httpUrl": "http://l2fpdktp.live.sxmty.com/live/hls/e4c3b363cc4549788e2d983f403e07db/d99ce1eb686e41b9afc888110bd95aa7.m3u8",
+      "probeMs": 213,
+      "segmentBytes": 444
+    },
+    {
+      "httpsUrl": "https://live-auth.51kandianshi.com/szgd/csztv1.m3u8",
+      "httpUrl": "http://live-auth.51kandianshi.com/szgd/csztv1.m3u8",
+      "probeMs": 120,
+      "segmentBytes": 69632
+    },
+    {
+      "httpsUrl": "https://live-auth.51kandianshi.com/szgd/csztv2.m3u8",
+      "httpUrl": "http://live-auth.51kandianshi.com/szgd/csztv2.m3u8",
+      "probeMs": 64,
+      "segmentBytes": 69632
+    },
+    {
+      "httpsUrl": "https://live-auth.51kandianshi.com/szgd/csztv3.m3u8",
+      "httpUrl": "http://live-auth.51kandianshi.com/szgd/csztv3.m3u8",
+      "probeMs": 133,
+      "segmentBytes": 159216
+    },
+    {
+      "httpsUrl": "https://live-auth.51kandianshi.com/szgd/csztv4.m3u8",
+      "httpUrl": "http://live-auth.51kandianshi.com/szgd/csztv4.m3u8",
+      "probeMs": 83,
+      "segmentBytes": 69632
+    },
+    {
+      "httpsUrl": "https://live-auth.51kandianshi.com/szgd/csztv5.m3u8",
+      "httpUrl": "http://live-auth.51kandianshi.com/szgd/csztv5.m3u8",
+      "probeMs": 65,
+      "segmentBytes": 69632
+    },
+    {
+      "httpsUrl": "https://live.ijjnews.com/jjtv/sd/live.m3u8",
+      "httpUrl": "http://live.ijjnews.com/jjtv/sd/live.m3u8",
+      "probeMs": 377,
+      "segmentBytes": 65536
+    },
+    {
+      "httpsUrl": "https://live.sgmsw.cn/hls/lhx1FUeZg/playlist.m3u8",
+      "httpUrl": "http://live.sgmsw.cn/hls/lhx1FUeZg/playlist.m3u8",
+      "probeMs": 443,
+      "segmentBytes": 66338
+    },
+    {
+      "httpsUrl": "https://live.wjyanghu.com/live/CH1.m3u8",
+      "httpUrl": "http://live.wjyanghu.com/live/CH1.m3u8",
+      "probeMs": 409,
+      "segmentBytes": 65536
+    },
+    {
+      "httpsUrl": "https://live.wjyanghu.com/live/CH2.m3u8",
+      "httpUrl": "http://live.wjyanghu.com/live/CH2.m3u8",
+      "probeMs": 375,
+      "segmentBytes": 65536
+    },
+    {
+      "httpsUrl": "https://live.yilongnews.com/live/ylzhpd.m3u8?auth_key=1741134122-0-0-fbf8d764c05b0a2547234f0f9f64e4b6",
+      "httpUrl": "http://live.yilongnews.com/live/ylzhpd.m3u8?auth_key=1741134122-0-0-fbf8d764c05b0a2547234f0f9f64e4b6",
+      "probeMs": 949,
+      "segmentBytes": 65536
+    },
+    {
+      "httpsUrl": "https://liveout.btzx.com.cn/3pyc0h/dbfvwu.m3u8",
+      "httpUrl": "http://liveout.btzx.com.cn/3pyc0h/dbfvwu.m3u8",
+      "probeMs": 433,
+      "segmentBytes": 65536
+    },
+    {
+      "httpsUrl": "https://liveout.btzx.com.cn/62ds9e/d9vi5g.m3u8",
+      "httpUrl": "http://liveout.btzx.com.cn/62ds9e/d9vi5g.m3u8",
+      "probeMs": 164,
+      "segmentBytes": 65536
+    },
+    {
+      "httpsUrl": "https://liveout.xntv.tv/a65jur/96iln2.m3u8",
+      "httpUrl": "http://liveout.xntv.tv/a65jur/96iln2.m3u8",
+      "probeMs": 669,
+      "segmentBytes": 65536
+    },
+    {
+      "httpsUrl": "https://liveout.xntv.tv/a65jur/96iln2.m3u8?zqinghd",
+      "httpUrl": "http://liveout.xntv.tv/a65jur/96iln2.m3u8?zqinghd",
+      "probeMs": 599,
+      "segmentBytes": 65536
+    },
+    {
+      "httpsUrl": "https://liveplay-srs.voc.com.cn/hls/tv/143_70175b.m3u8",
+      "httpUrl": "http://liveplay-srs.voc.com.cn/hls/tv/143_70175b.m3u8",
+      "probeMs": 5340,
+      "segmentBytes": 65536
+    },
+    {
+      "httpsUrl": "https://liveplay-srs.voc.com.cn/hls/tv/157_66df9e.m3u8#6#1",
+      "httpUrl": "http://liveplay-srs.voc.com.cn/hls/tv/157_66df9e.m3u8",
+      "probeMs": 6127,
+      "segmentBytes": 65536
+    },
+    {
+      "httpsUrl": "https://liveplay-srs.voc.com.cn/hls/tv/163_2c7011.m3u8",
+      "httpUrl": "http://liveplay-srs.voc.com.cn/hls/tv/163_2c7011.m3u8",
+      "probeMs": 6132,
+      "segmentBytes": 65536
+    },
+    {
+      "httpsUrl": "https://liveplay-srs.voc.com.cn/hls/tv/183_554704.m3u8",
+      "httpUrl": "http://liveplay-srs.voc.com.cn/hls/tv/183_554704.m3u8",
+      "probeMs": 6135,
+      "segmentBytes": 65536
+    },
+    {
+      "httpsUrl": "https://liveplay-srs.voc.com.cn/hls/tv/187_2abf84.m3u8",
+      "httpUrl": "http://liveplay-srs.voc.com.cn/hls/tv/187_2abf84.m3u8",
+      "probeMs": 6124,
+      "segmentBytes": 65536
+    },
+    {
+      "httpsUrl": "https://liveplay-srs.voc.com.cn/hls/tv/23_5d556a.m3u8",
+      "httpUrl": "http://liveplay-srs.voc.com.cn/hls/tv/23_5d556a.m3u8",
+      "probeMs": 5325,
+      "segmentBytes": 65536
+    },
+    {
+      "httpsUrl": "https://liveplay-srs.voc.com.cn/hls/tv/40_1d0ed0.m3u8",
+      "httpUrl": "http://liveplay-srs.voc.com.cn/hls/tv/40_1d0ed0.m3u8",
+      "probeMs": 6130,
+      "segmentBytes": 65536
+    },
+    {
+      "httpsUrl": "https://liveplay.ycrmt.cn/sxgd/lysh.m3u8",
+      "httpUrl": "http://liveplay.ycrmt.cn/sxgd/lysh.m3u8",
+      "probeMs": 121,
+      "segmentBytes": 65536
+    },
+    {
+      "httpsUrl": "https://liveplay.ycrmt.cn/sxgd/zhpd.m3u8",
+      "httpUrl": "http://liveplay.ycrmt.cn/sxgd/zhpd.m3u8",
+      "probeMs": 115,
+      "segmentBytes": 65536
+    },
+    {
+      "httpsUrl": "https://liveplus.lzr.com.cn/wlpd/HD/live.m3u8",
+      "httpUrl": "http://liveplus.lzr.com.cn/wlpd/HD/live.m3u8",
+      "probeMs": 254,
+      "segmentBytes": 65536
+    },
+    {
+      "httpsUrl": "https://liveplus.lzr.com.cn/xwzh/HD/live.m3u8",
+      "httpUrl": "http://liveplus.lzr.com.cn/xwzh/HD/live.m3u8",
+      "probeMs": 212,
+      "segmentBytes": 65536
+    },
+    {
+      "httpsUrl": "https://liveplus.pznews.com/pzzhpd/sd/live.m3u8",
+      "httpUrl": "http://liveplus.pznews.com/pzzhpd/sd/live.m3u8",
+      "probeMs": 520,
+      "segmentBytes": 65536
+    },
+    {
+      "httpsUrl": "https://lives.myun.tv/live/lgo97185.m3u8",
+      "httpUrl": "http://lives.myun.tv/live/lgo97185.m3u8",
+      "probeMs": 322,
+      "segmentBytes": 65536
+    },
+    {
+      "httpsUrl": "https://lives.myun.tv/live/ljkp2890.m3u8",
+      "httpUrl": "http://lives.myun.tv/live/ljkp2890.m3u8",
+      "probeMs": 231,
+      "segmentBytes": 65536
+    },
+    {
+      "httpsUrl": "https://lives.myun.tv/live/lnp683z5.m3u8",
+      "httpUrl": "http://lives.myun.tv/live/lnp683z5.m3u8",
+      "probeMs": 233,
+      "segmentBytes": 65536
+    },
+    {
+      "httpsUrl": "https://livesec.mudu.tv/watch/x6h90s.m3u8?auth_key=1718591057-413387-0-d86b69d055411656b69ef6be0fc89497",
+      "httpUrl": "http://livesec.mudu.tv/watch/x6h90s.m3u8?auth_key=1718591057-413387-0-d86b69d055411656b69ef6be0fc89497",
+      "probeMs": 691,
+      "segmentBytes": 74576
+    },
+    {
+      "httpsUrl": "https://livezzutv.chinamcache.com/zb02/zb02.m3u8?auth_key=1694413413-0-0-fdccf5824fa42b4a2e285f73e7d2d12b",
+      "httpUrl": "http://livezzutv.chinamcache.com/zb02/zb02.m3u8?auth_key=1694413413-0-0-fdccf5824fa42b4a2e285f73e7d2d12b",
+      "probeMs": 406,
+      "segmentBytes": 98064
+    },
+    {
+      "httpsUrl": "https://ls.qingting.fm/live/20198/64k.m3u8",
+      "httpUrl": "http://ls.qingting.fm/live/20198/64k.m3u8",
+      "probeMs": 307,
+      "segmentBytes": 65536
+    },
+    {
+      "httpsUrl": "https://m3u8-channel.lytv.tv/nmip-media/channellive/channel111841/playlist.m3u8",
+      "httpUrl": "http://m3u8-channel.lytv.tv/nmip-media/channellive/channel111841/playlist.m3u8",
+      "probeMs": 226,
+      "segmentBytes": 65536
+    },
+    {
+      "httpsUrl": "https://m3u8-channel.lytv.tv/nmip-media/channellive/channel113571/playlist.m3u8",
+      "httpUrl": "http://m3u8-channel.lytv.tv/nmip-media/channellive/channel113571/playlist.m3u8",
+      "probeMs": 321,
+      "segmentBytes": 65536
+    },
+    {
+      "httpsUrl": "https://m3u8-channel.lytv.tv/nmip-media/channellive/channel115062/playlist.m3u8",
+      "httpUrl": "http://m3u8-channel.lytv.tv/nmip-media/channellive/channel115062/playlist.m3u8",
+      "probeMs": 171,
+      "segmentBytes": 65536
+    },
+    {
+      "httpsUrl": "https://m3u8.channel.dzsm.com/nmip-media/channellive/channel100999/playlist.m3u8",
+      "httpUrl": "http://m3u8.channel.dzsm.com/nmip-media/channellive/channel100999/playlist.m3u8",
+      "probeMs": 259,
+      "segmentBytes": 65536
+    },
+    {
+      "httpsUrl": "https://m3u8.channel.dzsm.com/nmip-media/channellive/channel101257/playlist.m3u8",
+      "httpUrl": "http://m3u8.channel.dzsm.com/nmip-media/channellive/channel101257/playlist.m3u8",
+      "probeMs": 344,
+      "segmentBytes": 65536
+    },
+    {
+      "httpsUrl": "https://m3u8.channel.dzsm.com/nmip-media/channellive/channel104601/playlist.m3u8",
+      "httpUrl": "http://m3u8.channel.dzsm.com/nmip-media/channellive/channel104601/playlist.m3u8",
+      "probeMs": 254,
+      "segmentBytes": 65536
+    },
+    {
+      "httpsUrl": "https://m3u8.channel.dzsm.com/nmip-media/channellive/channel105549/playlist.m3u8",
+      "httpUrl": "http://m3u8.channel.dzsm.com/nmip-media/channellive/channel105549/playlist.m3u8",
+      "probeMs": 417,
+      "segmentBytes": 65536
+    },
+    {
+      "httpsUrl": "https://m3u8channel-bx.yunxya.com/nmip-media/channellive/channel104666/playlist.m3u8",
+      "httpUrl": "http://m3u8channel-bx.yunxya.com/nmip-media/channellive/channel104666/playlist.m3u8",
+      "probeMs": 276,
+      "segmentBytes": 65536
+    },
+    {
+      "httpsUrl": "https://m3u8channel-hy.yunxya.com/nmip-media/channellive/channel104355/playlist.m3u8",
+      "httpUrl": "http://m3u8channel-hy.yunxya.com/nmip-media/channellive/channel104355/playlist.m3u8",
+      "probeMs": 294,
+      "segmentBytes": 65536
+    },
+    {
+      "httpsUrl": "https://m3u8channel-ms.yunxya.com/nmip-media/channellive/channel100249/playlist.m3u8",
+      "httpUrl": "http://m3u8channel-ms.yunxya.com/nmip-media/channellive/channel100249/playlist.m3u8",
+      "probeMs": 355,
+      "segmentBytes": 65536
+    },
+    {
+      "httpsUrl": "https://m3u8channel-sm.yunxya.com/nmip-media/channellive/channel100420/playlist.m3u8",
+      "httpUrl": "http://m3u8channel-sm.yunxya.com/nmip-media/channellive/channel100420/playlist.m3u8",
+      "probeMs": 504,
+      "segmentBytes": 65536
+    },
+    {
+      "httpsUrl": "https://m3u8channel-tq.yunxya.com/nmip-media/channellive/channel100634/playlist.m3u8",
+      "httpUrl": "http://m3u8channel-tq.yunxya.com/nmip-media/channellive/channel100634/playlist.m3u8",
+      "probeMs": 395,
+      "segmentBytes": 65536
+    },
+    {
+      "httpsUrl": "https://m3u8channel-yc.yunxya.com/nmip-media/channellive/channel100103/playlist.m3u8",
+      "httpUrl": "http://m3u8channel-yc.yunxya.com/nmip-media/channellive/channel100103/playlist.m3u8",
+      "probeMs": 430,
+      "segmentBytes": 65536
+    },
+    {
+      "httpsUrl": "https://m3u8channel-yj.yunxya.com/nmip-media/channellive/channel101140/playlist.m3u8",
+      "httpUrl": "http://m3u8channel-yj.yunxya.com/nmip-media/channellive/channel101140/playlist.m3u8",
+      "probeMs": 267,
+      "segmentBytes": 65536
+    },
+    {
+      "httpsUrl": "https://m3u8channel.ysxtv.cn/nmip-media/channellive/channel101492/playlist.m3u8",
+      "httpUrl": "http://m3u8channel.ysxtv.cn/nmip-media/channellive/channel101492/playlist.m3u8",
+      "probeMs": 261,
+      "segmentBytes": 65536
+    },
+    {
+      "httpsUrl": "https://media.yqrmt.com/hls/hd-live.m3u8",
+      "httpUrl": "http://media.yqrmt.com/hls/hd-live.m3u8",
+      "probeMs": 593,
+      "segmentBytes": 77698
+    },
+    {
+      "httpsUrl": "https://mediaserver.abnvideos.com/streams/abnchina.m3u8",
+      "httpUrl": "http://mediaserver.abnvideos.com/streams/abnchina.m3u8",
+      "probeMs": 3717,
+      "segmentBytes": 65536
+    },
+    {
+      "httpsUrl": "https://mobile.ccdntech.com/transcoder/_definst_/vod164_Live/live/chunklist_w1177047531.m3u8",
+      "httpUrl": "http://mobile.ccdntech.com/transcoder/_definst_/vod164_Live/live/chunklist_w1177047531.m3u8",
+      "probeMs": 718,
+      "segmentBytes": 65536
+    },
+    {
+      "httpsUrl": "https://p2.bdstatic.com/rtmp.liveshow.lss-user.baidubce.com/live/stream_bduid_6488563992_8982723413/merged_1707497046297_88536_25144_41936.m3u8",
+      "httpUrl": "http://p2.bdstatic.com/rtmp.liveshow.lss-user.baidubce.com/live/stream_bduid_6488563992_8982723413/merged_1707497046297_88536_25144_41936.m3u8",
+      "probeMs": 90,
+      "segmentBytes": 65536
+    },
+    {
+      "httpsUrl": "https://pili-live-hls-zdzz-tv.zzxwcm.cn/zdzz-tv/nqzh.m3u8",
+      "httpUrl": "http://pili-live-hls-zdzz-tv.zzxwcm.cn/zdzz-tv/nqzh.m3u8",
+      "probeMs": 190,
+      "segmentBytes": 67680
+    },
+    {
+      "httpsUrl": "https://play-a2.quklive.com/live/1640945211435051.m3u8",
+      "httpUrl": "http://play-a2.quklive.com/live/1640945211435051.m3u8",
+      "probeMs": 145,
+      "segmentBytes": 65536
+    },
+    {
+      "httpsUrl": "https://play.kankanlive.com/live/1652755738635915.m3u8",
+      "httpUrl": "http://play.kankanlive.com/live/1652755738635915.m3u8",
+      "probeMs": 1457,
+      "segmentBytes": 231
+    },
+    {
+      "httpsUrl": "https://play.kankanlive.com/live/1656487214793905.m3u8",
+      "httpUrl": "http://play.kankanlive.com/live/1656487214793905.m3u8",
+      "probeMs": 1654,
+      "segmentBytes": 231
+    },
+    {
+      "httpsUrl": "https://play.kankanlive.com/live/1683944827526991.m3u8",
+      "httpUrl": "http://play.kankanlive.com/live/1683944827526991.m3u8",
+      "probeMs": 835,
+      "segmentBytes": 231
+    },
+    {
+      "httpsUrl": "https://play.kankanlive.com/live/1694661314645984.m3u8",
+      "httpUrl": "http://play.kankanlive.com/live/1694661314645984.m3u8",
+      "probeMs": 3632,
+      "segmentBytes": 231
+    },
+    {
+      "httpsUrl": "https://play.kankanlive.com/live/1704770893271981.m3u8",
+      "httpUrl": "http://play.kankanlive.com/live/1704770893271981.m3u8",
+      "probeMs": 3857,
+      "segmentBytes": 231
+    },
+    {
+      "httpsUrl": "https://play.kankanlive.com/live/1711282408137964.m3u8",
+      "httpUrl": "http://play.kankanlive.com/live/1711282408137964.m3u8",
+      "probeMs": 1438,
+      "segmentBytes": 231
+    },
+    {
+      "httpsUrl": "https://play.kankanlive.com/live/1711955176432990.m3u8",
+      "httpUrl": "http://play.kankanlive.com/live/1711955176432990.m3u8",
+      "probeMs": 635,
+      "segmentBytes": 231
+    },
+    {
+      "httpsUrl": "https://play.kankanlive.com/live/1711955827175988.m3u8",
+      "httpUrl": "http://play.kankanlive.com/live/1711955827175988.m3u8",
+      "probeMs": 3630,
+      "segmentBytes": 231
+    },
+    {
+      "httpsUrl": "https://play.kankanlive.com/live/1711955878545987.m3u8",
+      "httpUrl": "http://play.kankanlive.com/live/1711955878545987.m3u8",
+      "probeMs": 3439,
+      "segmentBytes": 231
+    },
+    {
+      "httpsUrl": "https://play.kankanlive.com/live/1711955964973985.m3u8",
+      "httpUrl": "http://play.kankanlive.com/live/1711955964973985.m3u8",
+      "probeMs": 2641,
+      "segmentBytes": 231
+    },
+    {
+      "httpsUrl": "https://play.kankanlive.com/live/1711956095637983.m3u8",
+      "httpUrl": "http://play.kankanlive.com/live/1711956095637983.m3u8",
+      "probeMs": 2836,
+      "segmentBytes": 231
+    },
+    {
+      "httpsUrl": "https://play.kankanlive.com/live/1720583009200246.m3u8",
+      "httpUrl": "http://play.kankanlive.com/live/1720583009200246.m3u8",
+      "probeMs": 5243,
+      "segmentBytes": 231
+    },
+    {
+      "httpsUrl": "https://play.kankanlive.com/live/1720583434627241.m3u8",
+      "httpUrl": "http://play.kankanlive.com/live/1720583434627241.m3u8",
+      "probeMs": 3051,
+      "segmentBytes": 231
+    },
+    {
+      "httpsUrl": "https://play.rongxianwang.net/ydrx/rongxianlive.m3u8?auth_key=1715846517-0-0-69728c58ca3d40f9331a8cf77d985e93",
+      "httpUrl": "http://play.rongxianwang.net/ydrx/rongxianlive.m3u8?auth_key=1715846517-0-0-69728c58ca3d40f9331a8cf77d985e93",
+      "probeMs": 508,
+      "segmentBytes": 65536
+    },
+    {
+      "httpsUrl": "https://play.scrstv.com.cn/TV/xwzh.m3u8?auth_key=1724660870-0-0-a245e661caf0188f84e8e486754a80ce",
+      "httpUrl": "http://play.scrstv.com.cn/TV/xwzh.m3u8?auth_key=1724660870-0-0-a245e661caf0188f84e8e486754a80ce",
+      "probeMs": 317,
+      "segmentBytes": 65536
+    },
+    {
+      "httpsUrl": "https://play.yunxya.com/channellive/whsh.m3u8",
+      "httpUrl": "http://play.yunxya.com/channellive/whsh.m3u8",
+      "probeMs": 182,
+      "segmentBytes": 65536
+    },
+    {
+      "httpsUrl": "https://play.yunxya.com/channellive/xinwen.m3u8",
+      "httpUrl": "http://play.yunxya.com/channellive/xinwen.m3u8",
+      "probeMs": 225,
+      "segmentBytes": 65536
+    },
+    {
+      "httpsUrl": "https://pull.daaiplus.com/live-DAAIPLUS/live-DAAIPLUS_HD.m3u8",
+      "httpUrl": "http://pull.daaiplus.com/live-DAAIPLUS/live-DAAIPLUS_HD.m3u8",
+      "probeMs": 636,
+      "segmentBytes": 65536
+    },
+    {
+      "httpsUrl": "https://qmmqvzoz.live.sxmty.com/live/hls/f24f8a390c084386a564074c9260100c/be3fdf07606145739ab2c4b80fe0136a.m3u8",
+      "httpUrl": "http://qmmqvzoz.live.sxmty.com/live/hls/f24f8a390c084386a564074c9260100c/be3fdf07606145739ab2c4b80fe0136a.m3u8",
+      "probeMs": 215,
+      "segmentBytes": 566
+    },
+    {
+      "httpsUrl": "https://res.cctvnews.cctv.com/video/3005/record/cctv/merge1/133396667284143308839013005/8fbd6180bdef4da19f6155cf6b4652e1-4.m3u8",
+      "httpUrl": "http://res.cctvnews.cctv.com/video/3005/record/cctv/merge1/133396667284143308839013005/8fbd6180bdef4da19f6155cf6b4652e1-4.m3u8",
+      "probeMs": 178,
+      "segmentBytes": 65536
+    },
+    {
+      "httpsUrl": "https://rtmp.gdlive.gdmain.com/live/lgo97185.m3u8",
+      "httpUrl": "http://rtmp.gdlive.gdmain.com/live/lgo97185.m3u8",
+      "probeMs": 484,
+      "segmentBytes": 65536
+    },
+    {
+      "httpsUrl": "https://rtmp.gdlive.gdmain.com/live/ljkp2890.m3u8",
+      "httpUrl": "http://rtmp.gdlive.gdmain.com/live/ljkp2890.m3u8",
+      "probeMs": 280,
+      "segmentBytes": 65536
+    },
+    {
+      "httpsUrl": "https://rtmp.gdlive.gdmain.com/live/lnp683z5.m3u8",
+      "httpUrl": "http://rtmp.gdlive.gdmain.com/live/lnp683z5.m3u8",
+      "probeMs": 188,
+      "segmentBytes": 65536
+    },
+    {
+      "httpsUrl": "https://rtmp.xytv.cn/live/118cfcf8c6df.m3u8",
+      "httpUrl": "http://rtmp.xytv.cn/live/118cfcf8c6df.m3u8",
+      "probeMs": 269,
+      "segmentBytes": 65536
+    },
+    {
+      "httpsUrl": "https://rtmp.xytv.cn/live/514f8a62d467.m3u8",
+      "httpUrl": "http://rtmp.xytv.cn/live/514f8a62d467.m3u8",
+      "probeMs": 202,
+      "segmentBytes": 65536
+    },
+    {
+      "httpsUrl": "https://satellitepull.cnr.cn/live/wx32dycjgb/playlist.m3u8",
+      "httpUrl": "http://satellitepull.cnr.cn/live/wx32dycjgb/playlist.m3u8",
+      "probeMs": 2591,
+      "segmentBytes": 453
+    },
+    {
+      "httpsUrl": "https://satellitepull.cnr.cn/live/wxjlxcgb/playlist.m3u8",
+      "httpUrl": "http://satellitepull.cnr.cn/live/wxjlxcgb/playlist.m3u8",
+      "probeMs": 2581,
+      "segmentBytes": 453
+    },
+    {
+      "httpsUrl": "https://st-video.xjmty.com/fs/livedit/6fc961a3e0f06313/c9338510613c6394.m3u8",
+      "httpUrl": "http://st-video.xjmty.com/fs/livedit/6fc961a3e0f06313/c9338510613c6394.m3u8",
+      "probeMs": 766,
+      "segmentBytes": 65536
+    },
+    {
+      "httpsUrl": "https://st-video.xjmty.com/fs/livedit/e55abfa37af26e19/8ce9971c2177b3dd.m3u8",
+      "httpUrl": "http://st-video.xjmty.com/fs/livedit/e55abfa37af26e19/8ce9971c2177b3dd.m3u8",
+      "probeMs": 470,
+      "segmentBytes": 65536
+    },
+    {
+      "httpsUrl": "https://stream.hrbtv.net/xwzh/playlist.m3u8?_upt=ef41dd531755913594",
+      "httpUrl": "http://stream.hrbtv.net/xwzh/playlist.m3u8?_upt=ef41dd531755913594",
+      "probeMs": 169,
+      "segmentBytes": 364
+    },
+    {
+      "httpsUrl": "https://stream.hrbtv.net/yspd/playlist.m3u8",
+      "httpUrl": "http://stream.hrbtv.net/yspd/playlist.m3u8",
+      "probeMs": 137,
+      "segmentBytes": 364
+    },
+    {
+      "httpsUrl": "https://stream.jmtv.com.cn/xwzh/sd/live.m3u8?_upt=341f4b8e1791883036",
+      "httpUrl": "http://stream.jmtv.com.cn/xwzh/sd/live.m3u8?_upt=341f4b8e1791883036",
+      "probeMs": 184,
+      "segmentBytes": 65536
+    },
+    {
+      "httpsUrl": "https://stream.sun0769.com/dgrtv1/mp4tv1_1500/index.m3u8",
+      "httpUrl": "http://stream.sun0769.com/dgrtv1/mp4tv1_1500/index.m3u8",
+      "probeMs": 159,
+      "segmentBytes": 65536
+    },
+    {
+      "httpsUrl": "https://stream2.jlntv.cn/baicheng1/sd/live.m3u8",
+      "httpUrl": "http://stream2.jlntv.cn/baicheng1/sd/live.m3u8",
+      "probeMs": 660,
+      "segmentBytes": 65536
+    },
+    {
+      "httpsUrl": "https://stream2.jlntv.cn/baishan1/sd/live.m3u8",
+      "httpUrl": "http://stream2.jlntv.cn/baishan1/sd/live.m3u8",
+      "probeMs": 350,
+      "segmentBytes": 65536
+    },
+    {
+      "httpsUrl": "https://stream2.jlntv.cn/ja/sd/live.m3u8",
+      "httpUrl": "http://stream2.jlntv.cn/ja/sd/live.m3u8",
+      "probeMs": 306,
+      "segmentBytes": 65536
+    },
+    {
+      "httpsUrl": "https://stream2.jlntv.cn/jlyb/sd/live.m3u8",
+      "httpUrl": "http://stream2.jlntv.cn/jlyb/sd/live.m3u8",
+      "probeMs": 390,
+      "segmentBytes": 65536
+    },
+    {
+      "httpsUrl": "https://stream2.jlntv.cn/qg/sd/live.m3u8",
+      "httpUrl": "http://stream2.jlntv.cn/qg/sd/live.m3u8",
+      "probeMs": 347,
+      "segmentBytes": 65536
+    },
+    {
+      "httpsUrl": "https://streamipcfapp.akamaized.net/live/_definst_/live_720/key_b1500.m3u8",
+      "httpUrl": "http://streamipcfapp.akamaized.net/live/_definst_/live_720/key_b1500.m3u8",
+      "probeMs": 501,
+      "segmentBytes": 325
+    },
+    {
+      "httpsUrl": "https://tencentplaybusiness.gztv.com/live/nanguodushi.m3u8",
+      "httpUrl": "http://tencentplaybusiness.gztv.com/live/nanguodushi.m3u8",
+      "probeMs": 346,
+      "segmentBytes": 100000
+    },
+    {
+      "httpsUrl": "https://tencentplaybusiness.gztv.com/live/xinwen.m3u8",
+      "httpUrl": "http://tencentplaybusiness.gztv.com/live/xinwen.m3u8",
+      "probeMs": 160,
+      "segmentBytes": 104096
+    },
+    {
+      "httpsUrl": "https://tencentplaybusiness.gztv.com/live/zonghes.m3u8",
+      "httpUrl": "http://tencentplaybusiness.gztv.com/live/zonghes.m3u8",
+      "probeMs": 295,
+      "segmentBytes": 100000
+    },
+    {
+      "httpsUrl": "https://tntgjhjb.live.sxmty.com/live/hls/3a4585ac11ec4e1bb07b419101b370c3/baf63e2b313440c2a25d7859f9b73b05-1.m3u8",
+      "httpUrl": "http://tntgjhjb.live.sxmty.com/live/hls/3a4585ac11ec4e1bb07b419101b370c3/baf63e2b313440c2a25d7859f9b73b05-1.m3u8",
+      "probeMs": 280,
+      "segmentBytes": 65536
+    },
+    {
+      "httpsUrl": "https://tvfile.lasatv.cn/nmip-media/channellive/channel101894/playlist.m3u8",
+      "httpUrl": "http://tvfile.lasatv.cn/nmip-media/channellive/channel101894/playlist.m3u8",
+      "probeMs": 3382,
+      "segmentBytes": 65536
+    },
+    {
+      "httpsUrl": "https://tvfile.lasatv.cn/nmip-media/channellive/channel103157/playlist.m3u8",
+      "httpUrl": "http://tvfile.lasatv.cn/nmip-media/channellive/channel103157/playlist.m3u8",
+      "probeMs": 3379,
+      "segmentBytes": 65536
+    },
+    {
+      "httpsUrl": "https://tvfile.lasatv.cn/nmip-media/channellive/channel104335/playlist.m3u8",
+      "httpUrl": "http://tvfile.lasatv.cn/nmip-media/channellive/channel104335/playlist.m3u8",
+      "probeMs": 2581,
+      "segmentBytes": 65536
+    },
+    {
+      "httpsUrl": "https://tylive.kan0512.com/norecord/csztv4k_4k.m3u8",
+      "httpUrl": "http://tylive.kan0512.com/norecord/csztv4k_4k.m3u8",
+      "probeMs": 130,
+      "segmentBytes": 65536
+    },
+    {
+      "httpsUrl": "https://tylive.kan0512.com/norecord/csztv4k_fhd.m3u8",
+      "httpUrl": "http://tylive.kan0512.com/norecord/csztv4k_fhd.m3u8",
+      "probeMs": 130,
+      "segmentBytes": 65536
+    },
+    {
+      "httpsUrl": "https://v.lzcdn28.com/20260217/8616_1de9f6e5/index.m3u8",
+      "httpUrl": "http://v.lzcdn28.com/20260217/8616_1de9f6e5/index.m3u8",
+      "probeMs": 743,
+      "segmentBytes": 65536
+    },
+    {
+      "httpsUrl": "https://vms-x.hbnews.net/video/JJSH/index.m3u8",
+      "httpUrl": "http://vms-x.hbnews.net/video/JJSH/index.m3u8",
+      "probeMs": 301,
+      "segmentBytes": 65952
+    },
+    {
+      "httpsUrl": "https://vms-x.hbnews.net/video/xwzh/index.m3u8",
+      "httpUrl": "http://vms-x.hbnews.net/video/xwzh/index.m3u8",
+      "probeMs": 208,
+      "segmentBytes": 75670
+    },
+    {
+      "httpsUrl": "https://wu31afbh.live.sxmty.com/live/hls/c5a0ebd3e73b4c4cbc91ea3b9abf1f54/51859030f2384070bf5bedce43126f6b-1.m3u8",
+      "httpUrl": "http://wu31afbh.live.sxmty.com/live/hls/c5a0ebd3e73b4c4cbc91ea3b9abf1f54/51859030f2384070bf5bedce43126f6b-1.m3u8",
+      "probeMs": 375,
+      "segmentBytes": 65536
+    },
+    {
+      "httpsUrl": "https://www.scnj.tv/hls_njtv_direct/1.m3u8",
+      "httpUrl": "http://www.scnj.tv/hls_njtv_direct/1.m3u8",
+      "probeMs": 296,
+      "segmentBytes": 65536
+    },
+    {
+      "httpsUrl": "https://www.scnj.tv/hls_njtv_direct/2.m3u8",
+      "httpUrl": "http://www.scnj.tv/hls_njtv_direct/2.m3u8",
+      "probeMs": 276,
+      "segmentBytes": 65536
+    },
+    {
+      "httpsUrl": "https://www.scnj.tv/hls_njtv_direct/9.m3u8",
+      "httpUrl": "http://www.scnj.tv/hls_njtv_direct/9.m3u8",
+      "probeMs": 250,
+      "segmentBytes": 65536
+    },
+    {
+      "httpsUrl": "https://xatv-yt.xiancity.cn/live/1/index.m3u8",
+      "httpUrl": "http://xatv-yt.xiancity.cn/live/1/index.m3u8",
+      "probeMs": 325,
+      "segmentBytes": 65536
+    },
+    {
+      "httpsUrl": "https://xatv-yt.xiancity.cn/live/2/index.m3u8",
+      "httpUrl": "http://xatv-yt.xiancity.cn/live/2/index.m3u8",
+      "probeMs": 293,
+      "segmentBytes": 65536
+    },
+    {
+      "httpsUrl": "https://xatv-yt.xiancity.cn/live/4/index.m3u8",
+      "httpUrl": "http://xatv-yt.xiancity.cn/live/4/index.m3u8",
+      "probeMs": 215,
+      "segmentBytes": 65536
+    },
+    {
+      "httpsUrl": "https://xatv-yt.xiancity.cn/live/5/index.m3u8",
+      "httpUrl": "http://xatv-yt.xiancity.cn/live/5/index.m3u8",
+      "probeMs": 339,
+      "segmentBytes": 65536
+    },
+    {
+      "httpsUrl": "https://xatv-yt.xiancity.cn/live/7/index.m3u8",
+      "httpUrl": "http://xatv-yt.xiancity.cn/live/7/index.m3u8",
+      "probeMs": 406,
+      "segmentBytes": 65536
+    },
+    {
+      "httpsUrl": "https://xhmm-new-live.media.xinhuamm.net/liveNoRecord/a42bf9ee9c224a44a393aafc33990c78_111ae5a842ff4b32ab277ed1d9e216c5.m3u8?auth_key=2017017629-3866c768f70a4b47a2352f7b746e7bc1-0-1470ba4cbd641cbe479da8838d3396da",
+      "httpUrl": "http://xhmm-new-live.media.xinhuamm.net/liveNoRecord/a42bf9ee9c224a44a393aafc33990c78_111ae5a842ff4b32ab277ed1d9e216c5.m3u8?auth_key=2017017629-3866c768f70a4b47a2352f7b746e7bc1-0-1470ba4cbd641cbe479da8838d3396da",
+      "probeMs": 226,
+      "segmentBytes": 65536
+    },
+    {
+      "httpsUrl": "https://zb-live.ynurl.com/guangnan/31407c0a-ec07-4b5f-8a89-c26fbcc1fcf9.m3u8",
+      "httpUrl": "http://zb-live.ynurl.com/guangnan/31407c0a-ec07-4b5f-8a89-c26fbcc1fcf9.m3u8",
+      "probeMs": 320,
+      "segmentBytes": 98912
+    },
+    {
+      "httpsUrl": "https://zb-live.ynurl.com/jiangchuan/ad8dc86f-f35a-4203-85f0-dfd0eef52d18.m3u8",
+      "httpUrl": "http://zb-live.ynurl.com/jiangchuan/ad8dc86f-f35a-4203-85f0-dfd0eef52d18.m3u8",
+      "probeMs": 289,
+      "segmentBytes": 122512
+    },
+    {
+      "httpsUrl": "https://zb-live.ynurl.com/tonghai/3bfe3a9e-48e6-4c1e-8770-1df66447cc6c.m3u8",
+      "httpUrl": "http://zb-live.ynurl.com/tonghai/3bfe3a9e-48e6-4c1e-8770-1df66447cc6c.m3u8",
+      "probeMs": 481,
+      "segmentBytes": 115536
+    },
+    {
+      "httpsUrl": "https://zb-live.ynurl.com/yimen/3b75a2f9-7941-46b7-992d-a9796fbca5fe.m3u8",
+      "httpUrl": "http://zb-live.ynurl.com/yimen/3b75a2f9-7941-46b7-992d-a9796fbca5fe.m3u8",
+      "probeMs": 411,
+      "segmentBytes": 100000
+    }
+  ]
+}

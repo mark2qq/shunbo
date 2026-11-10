@@ -1,0 +1,92 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+    <!-- 流媒体客户端：取数、取址、播放、投屏控制全走网络。
+         Flutter 模板只在 debug manifest 里声明 INTERNET，release 包会直接没网。 -->
+    <uses-permission android:name="android.permission.INTERNET"/>
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
+    <!-- 投屏：局域网 SSDP 组播发现需要（Android 13+ 需 NEARBY_WIFI_DEVICES 才稳定）。 -->
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE"/>
+    <uses-permission android:name="android.permission.CHANGE_WIFI_MULTICAST_STATE"/>
+    <uses-permission
+        android:name="android.permission.NEARBY_WIFI_DEVICES"
+        android:usesPermissionFlags="neverForLocation"
+        tools:targetApi="tiramisu"/>
+    <!-- 播放期间的前台服务保活（R11c：酷开/小米等会强制结束进程）。 -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK"/>
+    <!-- Android 13+ 前台服务的常驻通知需要该权限；拿不到时服务仍运行，只是看不到通知。 -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+
+    <!-- 电视（Android TV）适配：
+         1. leanback / touchscreen 都声明为非必需——否则在电视上装不上，
+            也会被应用商店按「手机应用」分类，电视端搜不到；
+         2. 遥控器数字键是本应用的主输入方式（按频道号跳台），
+            触屏非必需是这套交互的前提。 -->
+    <uses-feature android:name="android.software.leanback" android:required="false"/>
+    <uses-feature android:name="android.hardware.touchscreen" android:required="false"/>
+    <uses-feature android:name="android.hardware.gamepad" android:required="false"/>
+    <!-- 屏幕形态由运行时判定（R1），不在清单里按尺寸做任何声明。 -->
+    <uses-feature android:name="android.hardware.screen.portrait" android:required="false"/>
+    <uses-feature android:name="android.hardware.screen.landscape" android:required="false"/>
+
+    <application
+        android:usesCleartextTraffic="true"
+        android:label="顺播"
+        android:name="${applicationName}"
+        android:icon="@mipmap/ic_launcher"
+        android:banner="@drawable/tv_banner">
+        <!-- R2：**只保留这一个 LAUNCHER 入口**。
+             电视桌面认 LEANBACK_LAUNCHER、手机桌面认 LAUNCHER，两者写在**同一个**
+             intent-filter 里 → 系统只生成一个 Activity 入口，电视桌面上不会出现
+             第二个「顺播」图标（分成两个 intent-filter 才会出现两个图标）。
+             banner 属性是电视桌面横排卡片的必要资源，缺了智慧屏/电视桌面显示成
+             白底小图标，部分华为智慧屏还会因「缺少 TV 属性」判定为手机应用而拒绝安装。 -->
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:launchMode="singleTop"
+            android:taskAffinity=""
+            android:theme="@style/LaunchTheme"
+            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
+            android:banner="@drawable/tv_banner"
+            android:hardwareAccelerated="true"
+            android:windowSoftInputMode="adjustResize">
+            <!-- Specifies an Android theme to apply to this Activity as soon as
+                 the Android process has started. This theme is visible to the user
+                 while the Flutter UI initializes. After that, this theme continues
+                 to determine the Window background behind the Flutter UI. -->
+            <meta-data
+              android:name="io.flutter.embedding.android.NormalTheme"
+              android:resource="@style/NormalTheme"
+              />
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN"/>
+                <category android:name="android.intent.category.LAUNCHER"/>
+                <!-- 电视端入口：Android TV 的启动器只认 LEANBACK_LAUNCHER，
+                     缺了它应用在电视上装了也搜不到、点不开。 -->
+                <category android:name="android.intent.category.LEANBACK_LAUNCHER"/>
+            </intent-filter>
+        </activity>
+        <!-- 播放保活（R11c）。不导出、不可被外部应用拉起。 -->
+        <service
+            android:name=".KeepAliveService"
+            android:exported="false"
+            android:foregroundServiceType="mediaPlayback"/>
+        <!-- Don't delete the meta-data below.
+             This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
+        <meta-data
+            android:name="flutterEmbedding"
+            android:value="2" />
+    </application>
+    <!-- Required to query activities that can process text, see:
+         https://developer.android.com/training/package-visibility and
+         https://developer.android.com/reference/android/content/Intent#ACTION_PROCESS_TEXT.
+
+         In particular, this is used by the Flutter engine in io.flutter.plugin.text.ProcessTextPlugin. -->
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.PROCESS_TEXT"/>
+            <data android:mimeType="text/plain"/>
+        </intent>
+    </queries>
+</manifest>

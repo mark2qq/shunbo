@@ -1,0 +1,690 @@
+{
+  "format": "shunbo-extra-streams/1",
+  "probedAt": "2026-11-09T06:03:42.653586Z",
+  "source": "legacy/assets/channels.json",
+  "scope": "央视频道 + 卫视频道 + 苏州地方台",
+  "method": "m3u8 2xx + first segment 2xx/206 >= 4096 B (PC side, follows 302, final-URL base); not equal to decode success",
+  "caveat": "PC 侧网络可达性 + 分片可下载，不等价于电视端解码成功；以真机为准",
+  "params": {
+    "concurrency": 10,
+    "timeoutSeconds": 7,
+    "perChannel": 12,
+    "maxCandidates": 900,
+    "recheckConcurrency": 3,
+    "recheckTimeoutSeconds": 12,
+    "firstPassFailed": 146,
+    "recheckPassed": 2
+  },
+  "sources": [
+    {
+      "file": "fanmingming_cn.m3u",
+      "url": "https://gh-proxy.com/https://raw.githubusercontent.com/fanmingming/live/main/tv/m3u/index.m3u",
+      "bytes": 28517,
+      "entries": 94
+    },
+    {
+      "file": "vbskycn.m3u",
+      "url": "https://gh-proxy.com/https://raw.githubusercontent.com/vbskycn/iptv/master/tv/iptv4.m3u",
+      "bytes": 99582,
+      "entries": 450
+    },
+    {
+      "file": "guovin.m3u",
+      "url": "https://gh-proxy.com/https://raw.githubusercontent.com/Guovin/iptv-api/gd/output/result.m3u",
+      "bytes": 396412,
+      "entries": 1616
+    },
+    {
+      "file": "guovin.txt",
+      "url": "https://gh-proxy.com/https://raw.githubusercontent.com/Guovin/iptv-api/gd/output/result.txt",
+      "bytes": 144692,
+      "entries": 1616
+    },
+    {
+      "file": "aptv.m3u",
+      "url": "https://gh-proxy.com/https://raw.githubusercontent.com/kimentanm/aptv/master/m3u/iptv.m3u",
+      "bytes": 21971,
+      "entries": 119
+    },
+    {
+      "file": "fanmingming_ipv6.m3u",
+      "url": "https://gh-proxy.com/https://raw.githubusercontent.com/fanmingming/live/main/tv/m3u/ipv6.m3u",
+      "bytes": 25215,
+      "entries": 82
+    },
+    {
+      "file": "yuechan.m3u",
+      "url": "https://gh-proxy.com/https://raw.githubusercontent.com/YueChan/Live/main/IPTV.m3u",
+      "bytes": 33963,
+      "entries": 0
+    },
+    {
+      "file": "iptvorg_cn.m3u",
+      "url": "https://iptv-org.github.io/iptv/countries/cn.m3u",
+      "bytes": 32047,
+      "entries": 151
+    },
+    {
+      "file": "iptvorg_index.m3u",
+      "url": "https://iptv-org.github.io/iptv/index.m3u",
+      "bytes": 2635845,
+      "entries": 11452
+    }
+  ],
+  "candidateChannels": 125,
+  "candidateUrls": 197,
+  "crossChannelCandidates": 9,
+  "verifiedCount": 53,
+  "channelsWithExtra": 24,
+  "highDefinitionCount": 8,
+  "cctv1HighDefinitionCount": 0,
+  "streams": [
+    {
+      "num": 5,
+      "name": "CCTV-5",
+      "url": "http://gmxw.7766.org:808/hls/93/index.m3u8",
+      "label": "扩展·CCTV5",
+      "quality": 0,
+      "https": false,
+      "probeMs": 1853,
+      "segmentBytes": 65536,
+      "source": "vbskycn.m3u"
+    },
+    {
+      "num": 8,
+      "name": "CCTV-8",
+      "url": "http://124.165.251.82:85/tsfile/live/0008_1.m3u8?key=txiptv&playlive=1&authid=0",
+      "label": "扩展·CCTV8",
+      "quality": 0,
+      "https": false,
+      "probeMs": 208,
+      "segmentBytes": 65536,
+      "source": "vbskycn.m3u"
+    },
+    {
+      "num": 12,
+      "name": "CCTV-12",
+      "url": "http://124.165.251.82:85/tsfile/live/0012_1.m3u8?key=txiptv&playlive=1&authid=0",
+      "label": "扩展·CCTV12",
+      "quality": 0,
+      "https": false,
+      "probeMs": 435,
+      "segmentBytes": 65536,
+      "source": "vbskycn.m3u"
+    },
+    {
+      "num": 13,
+      "name": "CCTV-13",
+      "url": "http://ali-m-l.cztv.com/channels/lantian/channel21/1080p.m3u8",
+      "label": "扩展·1080P CCTV13",
+      "quality": 1080,
+      "https": false,
+      "probeMs": 98,
+      "segmentBytes": 65536,
+      "source": "vbskycn.m3u"
+    },
+    {
+      "num": 16,
+      "name": "CCTV-16",
+      "url": "http://gmxw.7766.org:808/hls/169/index.m3u8",
+      "label": "扩展·CCTV16",
+      "quality": 0,
+      "https": false,
+      "probeMs": 1631,
+      "segmentBytes": 65536,
+      "source": "vbskycn.m3u"
+    },
+    {
+      "num": 29,
+      "name": "CGTN",
+      "url": "http://english-livetx.cgtn.com/hls/yypdyyctzb_hd.m3u8",
+      "label": "扩展·CGTN",
+      "quality": 0,
+      "https": false,
+      "probeMs": 85,
+      "segmentBytes": 130416,
+      "source": "vbskycn.m3u"
+    },
+    {
+      "num": 29,
+      "name": "CGTN",
+      "url": "https://english-livebkali.cgtn.com/live/encgtn_0.m3u8",
+      "label": "扩展·CGTN英语",
+      "quality": 0,
+      "https": true,
+      "probeMs": 210,
+      "segmentBytes": 65536,
+      "source": "aptv.m3u"
+    },
+    {
+      "num": 34,
+      "name": "CGTN法语",
+      "url": "http://espanol-liveali.cgtn.com/hls/LSveOGBaBw41Ea7ukkVAUdKQ220802LSTexu6xAuFH8VZNBLE1ZNEa220802cd.m3u8",
+      "label": "扩展·CGTN法语",
+      "quality": 0,
+      "https": false,
+      "probeMs": 109,
+      "segmentBytes": 65536,
+      "source": "vbskycn.m3u"
+    },
+    {
+      "num": 45,
+      "name": "CHC家庭影院",
+      "url": "http://107.150.60.122/live/chcjt.m3u8",
+      "label": "扩展·CHC家庭影院",
+      "quality": 0,
+      "https": false,
+      "probeMs": 1343,
+      "segmentBytes": 65536,
+      "source": "guovin.m3u"
+    },
+    {
+      "num": 45,
+      "name": "CHC家庭影院",
+      "url": "http://38.75.136.137:98/gslb/dsdqpub/chcjt.m3u8?auth=testpub",
+      "label": "扩展·CHC家庭影院",
+      "quality": 0,
+      "https": false,
+      "probeMs": 1603,
+      "segmentBytes": 65536,
+      "source": "guovin.m3u"
+    },
+    {
+      "num": 45,
+      "name": "CHC家庭影院",
+      "url": "http://192.151.150.154/live/chcjt.m3u8",
+      "label": "扩展·CHC家庭影院",
+      "quality": 0,
+      "https": false,
+      "probeMs": 1709,
+      "segmentBytes": 65536,
+      "source": "guovin.m3u"
+    },
+    {
+      "num": 45,
+      "name": "CHC家庭影院",
+      "url": "http://198.204.228.26/live/chcjt.m3u8",
+      "label": "扩展·CHC家庭影院",
+      "quality": 0,
+      "https": false,
+      "probeMs": 1748,
+      "segmentBytes": 65536,
+      "source": "guovin.m3u"
+    },
+    {
+      "num": 45,
+      "name": "CHC家庭影院",
+      "url": "http://63.141.230.178:82/gslb/zbdq5.m3u8?id=chcjt",
+      "label": "扩展·CHC家庭影院",
+      "quality": 0,
+      "https": false,
+      "probeMs": 2103,
+      "segmentBytes": 65536,
+      "source": "guovin.m3u"
+    },
+    {
+      "num": 46,
+      "name": "CHC动作电影",
+      "url": "http://198.204.228.26/live/chcdz.m3u8",
+      "label": "扩展·CHC动作电影",
+      "quality": 0,
+      "https": false,
+      "probeMs": 1513,
+      "segmentBytes": 65536,
+      "source": "guovin.m3u"
+    },
+    {
+      "num": 46,
+      "name": "CHC动作电影",
+      "url": "http://38.75.136.137:98/gslb/dsdqpub/chcdz.m3u8?auth=testpub",
+      "label": "扩展·CHC动作电影",
+      "quality": 0,
+      "https": false,
+      "probeMs": 1646,
+      "segmentBytes": 65536,
+      "source": "guovin.m3u"
+    },
+    {
+      "num": 46,
+      "name": "CHC动作电影",
+      "url": "http://107.150.60.122/live/chcdz.m3u8",
+      "label": "扩展·CHC动作电影",
+      "quality": 0,
+      "https": false,
+      "probeMs": 1653,
+      "segmentBytes": 65536,
+      "source": "guovin.m3u"
+    },
+    {
+      "num": 60,
+      "name": "浙江卫视",
+      "url": "http://ali-m-l.cztv.com/channels/lantian/channel001/1080p.m3u8",
+      "label": "扩展·1080P 浙江卫视",
+      "quality": 1080,
+      "https": false,
+      "probeMs": 43,
+      "segmentBytes": 65536,
+      "source": "fanmingming_cn.m3u"
+    },
+    {
+      "num": 60,
+      "name": "浙江卫视",
+      "url": "http://ali-m-l.cztv.com/channels/lantian/channel01/1080p.m3u8",
+      "label": "扩展·1080P 浙江卫视",
+      "quality": 1080,
+      "https": false,
+      "probeMs": 48,
+      "segmentBytes": 65536,
+      "source": "guovin.m3u"
+    },
+    {
+      "num": 60,
+      "name": "浙江卫视",
+      "url": "https://ali-m-l.cztv.com/channels/lantian/channel001/1080p.m3u8",
+      "label": "扩展·1080P 浙江卫视",
+      "quality": 1080,
+      "https": true,
+      "probeMs": 50,
+      "segmentBytes": 65536,
+      "source": "vbskycn.m3u"
+    },
+    {
+      "num": 60,
+      "name": "浙江卫视",
+      "url": "http://101.35.240.114:88/live.php?id=浙江卫视4K",
+      "label": "扩展·4K 浙江卫视4K",
+      "quality": 2160,
+      "https": false,
+      "probeMs": 122,
+      "segmentBytes": 65536,
+      "source": "aptv.m3u",
+      "headers": {
+        "User-Agent": "aliplayer"
+      }
+    },
+    {
+      "num": 60,
+      "name": "浙江卫视",
+      "url": "http://101.35.240.114:88/live.php?id=浙江卫视",
+      "label": "扩展·浙江卫视",
+      "quality": 0,
+      "https": false,
+      "probeMs": 206,
+      "segmentBytes": 65536,
+      "source": "aptv.m3u",
+      "headers": {
+        "User-Agent": "AptvPlayer-UA"
+      }
+    },
+    {
+      "num": 60,
+      "name": "浙江卫视",
+      "url": "http://38.75.136.137:98/gslb/dsdqpub/zjwshd.m3u8?auth=testpub",
+      "label": "扩展·浙江卫视",
+      "quality": 0,
+      "https": false,
+      "probeMs": 1484,
+      "segmentBytes": 65536,
+      "source": "guovin.m3u"
+    },
+    {
+      "num": 60,
+      "name": "浙江卫视",
+      "url": "http://107.150.60.122/live/zjwshd.m3u8",
+      "label": "扩展·浙江卫视",
+      "quality": 0,
+      "https": false,
+      "probeMs": 1553,
+      "segmentBytes": 65536,
+      "source": "guovin.m3u"
+    },
+    {
+      "num": 60,
+      "name": "浙江卫视",
+      "url": "http://63.141.230.178:82/gslb/zbdq5.m3u8?id=zjwshd",
+      "label": "扩展·浙江卫视",
+      "quality": 0,
+      "https": false,
+      "probeMs": 2296,
+      "segmentBytes": 65536,
+      "source": "guovin.m3u"
+    },
+    {
+      "num": 62,
+      "name": "黑龙江卫视",
+      "url": "http://38.75.136.137:98/gslb/dsdqpub/hljwshd.m3u8?auth=testpub",
+      "label": "扩展·黑龙江卫视",
+      "quality": 0,
+      "https": false,
+      "probeMs": 1461,
+      "segmentBytes": 65536,
+      "source": "guovin.m3u"
+    },
+    {
+      "num": 65,
+      "name": "东方卫视",
+      "url": "http://bp-resource-dfl.bestv.cn/155/3/video.m3u8",
+      "label": "扩展·东方卫视",
+      "quality": 0,
+      "https": false,
+      "probeMs": 85,
+      "segmentBytes": 65536,
+      "source": "vbskycn.m3u"
+    },
+    {
+      "num": 66,
+      "name": "江苏卫视",
+      "url": "http://101.35.240.114:88/live.php?id=江苏卫视",
+      "label": "扩展·江苏卫视",
+      "quality": 0,
+      "https": false,
+      "probeMs": 433,
+      "segmentBytes": 65536,
+      "source": "aptv.m3u",
+      "headers": {
+        "User-Agent": "AptvPlayer-UA"
+      }
+    },
+    {
+      "num": 66,
+      "name": "江苏卫视",
+      "url": "http://107.150.60.122/live/jswshd.m3u8",
+      "label": "扩展·江苏卫视",
+      "quality": 0,
+      "https": false,
+      "probeMs": 1538,
+      "segmentBytes": 65536,
+      "source": "guovin.m3u"
+    },
+    {
+      "num": 66,
+      "name": "江苏卫视",
+      "url": "http://38.75.136.137:98/gslb/dsdqpub/jswshd.m3u8?auth=testpub",
+      "label": "扩展·江苏卫视",
+      "quality": 0,
+      "https": false,
+      "probeMs": 1673,
+      "segmentBytes": 65536,
+      "source": "guovin.m3u"
+    },
+    {
+      "num": 66,
+      "name": "江苏卫视",
+      "url": "http://38.75.136.137:98/gslb/dsdqbv/jswshd.m3u8?auth=test20251009",
+      "label": "扩展·江苏卫视",
+      "quality": 0,
+      "https": false,
+      "probeMs": 1712,
+      "segmentBytes": 65536,
+      "source": "guovin.m3u"
+    },
+    {
+      "num": 66,
+      "name": "江苏卫视",
+      "url": "http://63.141.230.178:82/gslb/zbdq5.m3u8?id=jswshd",
+      "label": "扩展·江苏卫视",
+      "quality": 0,
+      "https": false,
+      "probeMs": 1902,
+      "segmentBytes": 65536,
+      "source": "guovin.m3u"
+    },
+    {
+      "num": 66,
+      "name": "江苏卫视",
+      "url": "http://125.43.249.76:9901/tsfile/live/1030_1.m3u8?key=txiptv&playlive=1&authid=0",
+      "label": "扩展·江苏卫视",
+      "quality": 0,
+      "https": false,
+      "probeMs": 10925,
+      "segmentBytes": 65536,
+      "source": "vbskycn.m3u"
+    },
+    {
+      "num": 70,
+      "name": "湖南卫视",
+      "url": "http://101.35.240.114:88/live.php?id=湖南卫视4K",
+      "label": "扩展·4K 湖南卫视4K",
+      "quality": 2160,
+      "https": false,
+      "probeMs": 153,
+      "segmentBytes": 65536,
+      "source": "aptv.m3u",
+      "headers": {
+        "User-Agent": "aliplayer"
+      }
+    },
+    {
+      "num": 72,
+      "name": "安徽卫视",
+      "url": "http://125.43.249.76:9901/tsfile/live/1037_1.m3u8?key=txiptv&playlive=1&authid=0",
+      "label": "扩展·安徽卫视",
+      "quality": 0,
+      "https": false,
+      "probeMs": 9501,
+      "segmentBytes": 65536,
+      "source": "vbskycn.m3u"
+    },
+    {
+      "num": 78,
+      "name": "江西卫视",
+      "url": "http://112.27.5.218:9901/tsfile/live/faacts/0138_1.m3u8?key=txiptv&playlive=1&authid=0",
+      "label": "扩展·江西卫视",
+      "quality": 0,
+      "https": false,
+      "probeMs": 108,
+      "segmentBytes": 65536,
+      "source": "vbskycn.m3u"
+    },
+    {
+      "num": 78,
+      "name": "江西卫视",
+      "url": "http://101.35.240.114:88/live.php?id=江西卫视",
+      "label": "扩展·江西卫视",
+      "quality": 0,
+      "https": false,
+      "probeMs": 301,
+      "segmentBytes": 65536,
+      "source": "aptv.m3u",
+      "headers": {
+        "User-Agent": "AptvPlayer-UA"
+      }
+    },
+    {
+      "num": 78,
+      "name": "江西卫视",
+      "url": "http://38.75.136.137:98/gslb/dsdqpub/jxwshd.m3u8?auth=testpub",
+      "label": "扩展·江西卫视",
+      "quality": 0,
+      "https": false,
+      "probeMs": 1491,
+      "segmentBytes": 65536,
+      "source": "guovin.m3u"
+    },
+    {
+      "num": 79,
+      "name": "辽宁卫视",
+      "url": "http://61.136.172.236:9901/tsfile/live/0121_1.m3u8?key=txiptv&playlive=1&authid=0",
+      "label": "扩展·辽宁卫视",
+      "quality": 0,
+      "https": false,
+      "probeMs": 1555,
+      "segmentBytes": 65536,
+      "source": "vbskycn.m3u"
+    },
+    {
+      "num": 79,
+      "name": "辽宁卫视",
+      "url": "http://38.75.136.137:98/gslb/dsdqpub/lnwshd.m3u8?auth=testpub",
+      "label": "扩展·辽宁卫视",
+      "quality": 0,
+      "https": false,
+      "probeMs": 1632,
+      "segmentBytes": 65536,
+      "source": "guovin.m3u"
+    },
+    {
+      "num": 83,
+      "name": "山东卫视",
+      "url": "http://198.204.228.26/live/sdwshd.m3u8",
+      "label": "扩展·山东卫视",
+      "quality": 0,
+      "https": false,
+      "probeMs": 1489,
+      "segmentBytes": 65536,
+      "source": "guovin.m3u"
+    },
+    {
+      "num": 83,
+      "name": "山东卫视",
+      "url": "http://38.75.136.137:98/gslb/dsdqpub/sdwshd.m3u8?auth=testpub",
+      "label": "扩展·山东卫视",
+      "quality": 0,
+      "https": false,
+      "probeMs": 1678,
+      "segmentBytes": 65536,
+      "source": "guovin.m3u"
+    },
+    {
+      "num": 84,
+      "name": "深圳卫视",
+      "url": "http://101.35.240.114:88/live.php?id=深圳卫视4K",
+      "label": "扩展·4K 深圳卫视4K",
+      "quality": 2160,
+      "https": false,
+      "probeMs": 166,
+      "segmentBytes": 98688,
+      "source": "aptv.m3u",
+      "headers": {
+        "User-Agent": "AptvPlayer-UA"
+      }
+    },
+    {
+      "num": 84,
+      "name": "深圳卫视",
+      "url": "http://101.35.240.114:88/live.php?id=深圳卫视",
+      "label": "扩展·深圳卫视",
+      "quality": 0,
+      "https": false,
+      "probeMs": 1401,
+      "segmentBytes": 65536,
+      "source": "aptv.m3u",
+      "headers": {
+        "User-Agent": "AptvPlayer-UA"
+      }
+    },
+    {
+      "num": 84,
+      "name": "深圳卫视",
+      "url": "http://38.75.136.137:98/gslb/dsdqpub/szwshd.m3u8?auth=testpub",
+      "label": "扩展·深圳卫视",
+      "quality": 0,
+      "https": false,
+      "probeMs": 1650,
+      "segmentBytes": 65536,
+      "source": "guovin.m3u"
+    },
+    {
+      "num": 84,
+      "name": "深圳卫视",
+      "url": "http://107.150.60.122/live/szwshd.m3u8",
+      "label": "扩展·深圳卫视",
+      "quality": 0,
+      "https": false,
+      "probeMs": 1655,
+      "segmentBytes": 65536,
+      "source": "guovin.m3u"
+    },
+    {
+      "num": 84,
+      "name": "深圳卫视",
+      "url": "http://63.141.230.178:82/gslb/zbdq5.m3u8?id=szwshd",
+      "label": "扩展·深圳卫视",
+      "quality": 0,
+      "https": false,
+      "probeMs": 2066,
+      "segmentBytes": 65536,
+      "source": "guovin.m3u"
+    },
+    {
+      "num": 86,
+      "name": "天津卫视",
+      "url": "http://101.35.240.114:88/live.php?id=天津卫视",
+      "label": "扩展·天津卫视",
+      "quality": 0,
+      "https": false,
+      "probeMs": 1552,
+      "segmentBytes": 65536,
+      "source": "aptv.m3u",
+      "headers": {
+        "User-Agent": "AptvPlayer-UA"
+      }
+    },
+    {
+      "num": 86,
+      "name": "天津卫视",
+      "url": "http://38.75.136.137:98/gslb/dsdqpub/tjwshd.m3u8?auth=testpub",
+      "label": "扩展·天津卫视",
+      "quality": 0,
+      "https": false,
+      "probeMs": 1626,
+      "segmentBytes": 65536,
+      "source": "guovin.m3u"
+    },
+    {
+      "num": 86,
+      "name": "天津卫视",
+      "url": "http://107.150.60.122/live/tjwshd.m3u8",
+      "label": "扩展·天津卫视",
+      "quality": 0,
+      "https": false,
+      "probeMs": 1929,
+      "segmentBytes": 65536,
+      "source": "guovin.m3u"
+    },
+    {
+      "num": 96,
+      "name": "山西卫视",
+      "url": "http://119.39.9.8:9901/tsfile/live/0118_1.m3u8",
+      "label": "扩展·山西卫视",
+      "quality": 0,
+      "https": false,
+      "probeMs": 383,
+      "segmentBytes": 65536,
+      "source": "vbskycn.m3u"
+    },
+    {
+      "num": 100,
+      "name": "新疆卫视",
+      "url": "http://218.84.12.186:8001/hls/main/playlist.m3u8?zxinjd;http://218.84.12.186:8001/hls/main/playlist.m3u8zxinjd",
+      "label": "扩展·新疆卫视",
+      "quality": 0,
+      "https": false,
+      "probeMs": 482,
+      "segmentBytes": 65536,
+      "source": "vbskycn.m3u"
+    },
+    {
+      "num": 113,
+      "name": "凤凰香港",
+      "url": "https://epg.pw/stream/5f16dc7fc8aaaed3205516c63e4a8c24bca9dbba1181684244729cf574505b0e.m3u8",
+      "label": "扩展·凤凰香港",
+      "quality": 0,
+      "https": true,
+      "probeMs": 1907,
+      "segmentBytes": 65536,
+      "source": "guovin.m3u"
+    },
+    {
+      "num": 117,
+      "name": "东方卫视4K",
+      "url": "https://bp-resource-dfl.bestv.cn/148/3/video.m3u8",
+      "label": "扩展·4K 东方卫视4K",
+      "quality": 2160,
+      "https": true,
+      "probeMs": 143,
+      "segmentBytes": 65536,
+      "source": "vbskycn.m3u"
+    }
+  ]
+}

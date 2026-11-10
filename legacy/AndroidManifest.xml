@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  顺播原生兼容分支（路线 B）。
+
+  与 Flutter 主程序是**两个独立的 APK / 两个独立包名**：
+    com.shunbo.tv       -> minSdk 24, Flutter 3.47, v1+v2 双签（现有 1.0.2）
+    com.shunbo.tv.legacy -> minSdk 16, 纯 Java + ijkplayer, 仅 v1(SHA-1)
+  独立包名是为了避免「同包名、不同签名」导致用户无法覆盖安装或误覆盖回退基线。
+
+  技术档位对齐参考实现（昭昭TV.apk，已证实可在这台 Letv S50 Air 安装使用）：
+    minSdk 16 / 仅 armeabi-v7a / v1 JAR 签名 / LEANBACK + LAUNCHER 双入口 /
+    banner 320x180 / touchscreen required=false / 明文 HTTP。
+  targetSdk 取 22（低于 23）：老系统不触发运行时权限与高版本行为变化，
+  明文 HTTP 默认允许，不用 usesCleartextTraffic（该属性 API 23 才引入）。
+
+  versionName 1.0.4（与主程序同号）；本包是新增的独立产物，不改动主程序。
+-->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.shunbo.tv.legacy"
+    android:versionCode="5"
+    android:versionName="1.0.4">
+
+    <uses-sdk
+        android:minSdkVersion="16"
+        android:targetSdkVersion="22" />
+
+    <!-- 电视没有触摸屏；Leanback 用 required=false，普通手机桌面也能装。 -->
+    <uses-feature android:name="android.hardware.touchscreen" android:required="false" />
+    <uses-feature android:name="android.software.leanback" android:required="false" />
+
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <!-- 设置页「开机自启」；系统自启管理白名单由用户在电视系统里放行。 -->
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+
+    <application
+        android:allowBackup="false"
+        android:label="@string/app_name"
+        android:icon="@drawable/ic_launcher"
+        android:banner="@drawable/banner"
+        android:theme="@style/AppTheme">
+
+        <!-- 必须写全限定名：manifest package 是 com.shunbo.tv.legacy，
+             而 Java 源码包是 com.shunbo.legacy。写相对名 ".LegacyPlayerActivity"
+             会被系统拼成 com.shunbo.tv.legacy.LegacyPlayerActivity，
+             安装能过（PackageParser 不校验类存在），一点开就
+             ClassNotFoundException 闪退。构建脚本会用 aapt2 badging 的
+             launchable-activity 反查 dex 描述符，锁死这条一致性。 -->
+        <activity
+            android:name="com.shunbo.legacy.LegacyPlayerActivity"
+            android:label="@string/app_name"
+            android:icon="@drawable/ic_launcher"
+            android:banner="@drawable/banner"
+            android:launchMode="singleTask"
+            android:screenOrientation="sensorLandscape"
+            android:configChanges="orientation|screenSize|smallestScreenSize|keyboardHidden">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+                <category android:name="android.intent.category.LEANBACK_LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!-- 开机自启接收器：与单包同源，开关在设置页「开机自启」。 -->
+        <receiver
+            android:name="com.shunbo.legacy.BootReceiver"
+            android:enabled="true"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.QUICKBOOT_POWERON" />
+            </intent-filter>
+        </receiver>
+    </application>
+</manifest>

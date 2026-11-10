@@ -1,0 +1,37 @@
+name: shunbo
+description: 顺播 (shunbo) 跨端视频播放软件 — Flutter + libmpv
+publish_to: 'none'
+version: 1.0.4+5
+
+environment:
+  sdk: '>=3.4.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  # E3 真实 libmpv 绑定：dart:ffi 的 UTF-8 编组 / 内存分配辅助（本机缓存 2.2.0）。
+  ffi: ^2.1.0
+  # E3 桌面端真实播放内核：media_kit 基于 libmpv，Windows/Linux/macOS 三端共用。
+  # 之所以不用自研 FFI + 渲染面：Flutter Windows 只提供 pixel-buffer 纹理注册接口，
+  # `mpv_render_context_create` 的 GPU 直连需要 C++ 插件，而 media_kit 已经把
+  # 渲染面、硬解、请求头、时长/位置读数组装好了。Android 仍走自研平台通道（media3），
+  # 因此**不**引入 media_kit_libs_android_video，避免 APK 体积翻倍。
+  media_kit: ^1.2.6
+  media_kit_video: ^2.0.1
+  media_kit_libs_windows_video: ^1.0.11
+  # E9 来源可信度：SHA-256 摘要固定（TOFU）+ HMAC-SHA256 签名校验。
+  # 原本已是 flutter 工具链的传递依赖（pubspec.lock 3.0.8），本机已缓存，
+  # 提升为显式依赖不需要新增下载。
+  crypto: ^3.0.6
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  # 仅 tooling 的帧级抽样用：解码 mpv 抓下来的 JPEG 算亮度/运动/感知哈希。
+  # 本机已缓存 4.3.0；lib/ 下的生产代码不依赖它。
+  image: ^4.3.0
+
+flutter:
+  # 必须显式打开：不开这一项，MaterialIcons-Regular.otf 不会被打进产物，
+  # 所有 Icon 在真机上会渲染成「方框」。此前 MVP 界面几乎不用图标，这个坑一直没暴露。
+  uses-material-design: true
