@@ -3788,3 +3788,41 @@ API 18 的 ANativeWindow 行为都能产生同样的读数。所以本轮**只�
 | 独立包 | `dist/Shunbo-Legacy-1.0.4-armv7a.apk` 3,544,604 B · SHA-256 `f94f70a825fe7e18e93788f9cf40e0b1802338df5f2d1512edf885109561dee4` |
 | 门禁 | 35 步 / **3261** 断言全绿；legacy **268/268**（O75/O77 改写 + 新增 O78–O81） |
 | 回退 | 16:18 / 15:50 / 14:42 / 13:52 / 13:28 / 12:21 的包在 `dist/_prev/` |
+
+---
+
+## §45 Windows 桌面版 1.0.4 出包与 GitHub 发布（2026-11-11 08:40）
+
+### 1. 产物
+
+| 文件 | 说明 | 大小 (B) | SHA-256 |
+|---|---|---:|---|
+| `Shunbo-1.0.4-windows-x64-setup.exe` | 安装版：Inno Setup 6 / lzma2 / per-user（`PrivilegesRequired=lowest`，不弹 UAC） | 25,751,560 | `df4f0607123580759b6311db5b02b2fedb81b20856250c1b3a54265e2a0b71d1` |
+| `Shunbo-1.0.4-windows-x64-portable.zip` | 便携版：解压即用，不写注册表 | 33,517,734 | `dabd8735721dc6981181487d0fc6b4637c0a8171a73d742fb4f513428ca91930` |
+
+版本与 `pubspec.yaml` 的 `1.0.4+5` 对齐（`VersionInfoVersion=1.0.4.5`）。
+`dist/` 仍被 `.gitignore` 排除，**二进制不入库，发布走 Release 资产**——与两个 APK 同一约定。
+
+### 2. 构建链（仓库内可复现）
+
+本次实测脚本落在 `tooling/windows_release.iss`（`dist/windows/Shunbo-1.0.4.iss` 是出包时的绝对路径副本，不入库）。顺序：
+
+1. `bash tooling/fetch_windows_kits.sh` → `flutter build windows --release`（本次 112.9 s）。
+2. 把 `build\windows\x64\runner\Release\.` 整体复制到 `dist\windows\Shunbo-1.0.4\`，**并补齐 VC++ 运行库 DLL**（`msvcp140.dll` / `vcruntime140.dll` / `vcruntime140_1.dll`）。缺任意一个，装到没装过运行库的机器上会启动即崩；Flutter 不会替你做这一步。
+3. `ISCC.exe tooling\windows_release.iss` 出安装版；同目录压成便携 zip。
+
+四个已验证的坑：`ArchitecturesAllowed` 必须写 `x64compatible`（Inno 6 里 `x64` 已弃用）；脚本须 UTF-8 BOM + CRLF，否则中文按 ANSI 解析乱码；Git Bash 直传 `/VERYSILENT` 会被 MSYS 改写成 `C:/Program Files/Git/VERYSILENT`（用 `MSYS2_ARG_CONV_EXCL='*'` 或 PowerShell）；调用脚本宿主用 PowerShell 工具而非 Bash。
+
+与 `tooling/windows_installer.iss` 并存是有意的：旧脚本直接从 `build\...\Release` 打包、输出 `Shunbo-Setup-<版本>-x64.exe`，带 `installer_readme_zh.txt` 首屏与中文语言包，是早期通用脚本；新脚本是本次实测出包路径，两者不互相替换。
+
+### 3. 内核与数据（静态核查）
+
+桌面分支走 `MediaKitPlayerController`（libmpv），不是 Android 的 ExoPlayer / ijkplayer。频道台账编译进 `verified_channels.g.dart` / `official_satellite.g.dart`，**不是运行时读 assets**——安装包里没有 `channels.json`，也不需要随包分发内容源。
+
+### 4. 验证范围
+
+静默安装与静默卸载退出码均为 0，落地 33 个文件，`shunbo.exe` / `flutter_windows.dll` / AOT 库 / `icudtl.dat` / mpv 相关 DLL 齐全。**未做 GUI 启动与真机播放走查**（无桌面播放实测），这一项仍是空白，不能写进「已验证」。
+
+### 5. 发布
+
+Release `v1.0.4`（id `441082615`）在原有 2 个 APK 之外补上这 2 个 Windows 资产，共 4 个；服务端 `digest` 与本地 `sha256sum` 逐一比对一致。源码侧只新增 `tooling/windows_release.iss` 与本节记录，版本号、播放逻辑、门禁断言一个没动。
