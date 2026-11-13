@@ -6,8 +6,10 @@ import 'source_profile.dart';
 /// 用于验证 [SourceAdapter] 契约与换源调度链路，不依赖真实爬虫或 libmpv。
 /// 真实实现（Android jar / QuickJS、桌面 Dart 解析子集）将在 E2 落地阶段替换。
 class MemorySourceAdapter implements SourceAdapter {
+  /// 1.0.5：第三方点播源可携带 Referer / UA 等头；默认空集合，
+  /// 内置片库与 1.0.4 的所有构造点行为不变。
   @override
-  Map<String, String> get playbackHeaders => const <String, String>{};
+  final Map<String, String> playbackHeaders;
 
   @override
   final String id;
@@ -35,7 +37,9 @@ class MemorySourceAdapter implements SourceAdapter {
     },
     Map<String, List<EpisodeInfo>>? episodes,
     Map<String, List<PlayUrl>>? urls,
-  })  : _episodes = episodes ?? <String, List<EpisodeInfo>>{},
+    Map<String, String> playbackHeaders = const <String, String>{},
+  })  : playbackHeaders = Map<String, String>.unmodifiable(playbackHeaders),
+        _episodes = episodes ?? <String, List<EpisodeInfo>>{},
         _urls = urls ?? <String, List<PlayUrl>>{};
 
   @override

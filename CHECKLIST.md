@@ -1064,3 +1064,685 @@ P1 缓冲后 `seekTo(getCurrentPosition())` 自愈、P2 硬解对照实验尚未
 | 判读规则 | 本次无重叠 + 历史重叠 0 + 帧率回 25/25 ⇒ 交接窗口是病因；本次无重叠但仍 ~10 ⇒ 硬排除交接窗口、转 MediaCodec/Surface；超时 T 增长 ⇒ 按「最深 P × 上次释放 Y ms」调常量 | 待真机 |
 | 产物 | 单包 43,858,419 B `393a5f6d…478433bce4`；独立包 3,544,604 B `f94f70a8…9561dee4` | badging |
 | 全量门禁 | 35 步 / **3261** 断言；legacy 268/268；独立包 80/80；单包 24/24 | `verify_all.dart` |
+
+### 三十四、1.0.5：G2+G3 默认组合 + G1 开放接口（2026-11-11 16:10）
+
+| 项目 | 结论 | 证据 |
+|---|---|---|
+| 版本 | `1.0.5+6`；`pubspec.yaml` / `system_channel.dart` / `windows_installer.iss` 三处同源，门禁版本断言同步更新且**断言数不减** | H01–H03 / R12 / G14 / G36 / I01 |
+| 默认组合 | G2（内置合规片库 + E9 纯数据规则源）+ G3 为默认；G1 默认关闭 | A01–A06 |
+| G1 开关 | 默认关闭，关闭时零外部请求、`usesBuiltIn=true`；只开开关不选地址也不产生外部地址 | A04/A05 / D02/D03 |
+| 候选地址 | 列表含内置片库 + 《播放接口.txt》6 个点播条目，id 唯一、无内嵌账密；仅可选项数据，不随包请求/注册 | B01–B08、H08 |
+| 手动输入 | 设置页 TextField → 添加并使用；上限 12 条、可移除、可恢复默认；非法地址一律拒绝 | G05 / D07–D13 |
+| 地址校验 | 仅 https（loopback 可 http）；拒账密 / `file:` / `javascript:` / 超长 / 控制字符；与传输层 `isLoopbackHost` 同口径 | C01–C14 |
+| 安全基线 | 不放宽：只接受 dart/regex/json；`shunbo/source_jar` 原生通道未注册、生产 `allowUnsafeBackends` 仍 false ⇒ **不执行外部 jar / JS**；5 条明文 http 候选被明确拒绝 | B09/B10、G07–G10 |
+| 落盘 | `FileConfigStore.saveState('vod-source-address')`；坏配置回落关闭默认；save/load/reset 往返可复现 | E01–E06、A07–A10 |
+| 1.0.4 隔离 | 空查询返回**原列表引用**、计数文案逐字相同；默认片源仍 `VodCatalog.sourceId`；直播控制器与播放内核零改动 | F02–F04、G12/G13、H07/H09 |
+| 回退基线 | 1.0.4 legacy 出包脚本与 Windows 实测 iss 原样保留；本版未动 1.0.4 产物 | H05/H06 |
+| 门禁 | `flutter analyze` 0 问题；**37 步 / 3495 断言全绿**（3261 旧断言全保留 + 地址校验 109 + 第三方接入 125）；legacy 268/268 | `verify_all.dart` |
+| 缺陷修正 | D17 暴露「反序列化未校验自定义地址格式」⇒ 修 `fromJson` 复用同一校验后再全绿，非改断言 | D17 |
+| 出包暴露的过期断言 | N09 原锁死「单包版本 1.0.4 / code 5」，但它读的是每次组装都会覆盖的 `legacy/single/single_report.json`；1.0.5 出包后误报 267/268。改为**与 pubspec 同源**比对（仍精确校验，忘传 `--version-name` 会立刻失败），268/268 恢复 | `verify_legacy_compat.dart` N09 |
+| 出包（16:37，**已作废**） | 当时的 3 个 1.0.5 产物不含第三方点播接入代码（改动发生在出包之后），哈希已由 §47.6 重打产物取代，不再分发 | `README.md` §46.7 / §47.6 |
+| 未做 | 未提交源码、未推送、未建 tag/Release；GUI 人工走查、G1 真实 https 地址导入实测、三端真机播放验证均空白 | — |
+
+### 三十五、1.0.5 复查：第三方点播数据真接入 + 能播放（2026-11-11 17:05）
+
+| 项 | 结论 | 证据 |
+|---|---|---|
+| 截图误导线索 | 绿字验的是「当前选中地址」，非输入框；256 KB 来自官方入口 277,018 B HTML，而 `:16/8888` 仅 12,437 B | `vod_source_section.dart` / `source_config_url.dart` + 实测 |
+| 硬事实 | `:16/8888` 27 个站点全 `type:3`（26 `csp_*` + jar + `drpy2.min.js`），只是插件注册表，无影片数据 | 配置结构解析 |
+| 突破口 | `47.96.82.41:5188/config.json` 的 20 个 `type:1` 是苹果 CMS V10 采集 API，`ac=list` / `ac=detail` 均为普通 HTTP JSON | 实测 11 个可达 |
+| 接入形态 | ① 点播数据契约 JSON（`items`）② TVBox 配置里的 `type:1` 采集站；`csp_`/jar/`type:3` 明确跳过 | `third_party_vod.dart` |
+| 安全基线 | **未放宽**：不加载 jar / JS / 命令，`allowUnsafeBackends` 生产仍 false，原生 `shunbo/source_jar` 未注册，不内置任何第三方地址 | F01–F04 / F08 |
+| 真网结果 | 24 部 / 3 站 / 32.6 s；抽查播放地址 `206 + application/vnd.apple.mpegurl + #EXTM3U` ⇒ 可直接起播 | 17:20 实测 |
+| 明确拒绝 | 插件型配置给出「不执行外部代码」原因；不开明文放行给出「请显式打开允许明文 http」原因 | E12/E13/E31/E32 |
+| 修掉的缺陷 | ① 输入框实时校验 ② 应用按钮优先消费输入框 + 显示当前选中 ③ 被拒候选不可选中且重启不残留 | G06b/G06c、F10–F13 |
+| 修掉的质量缺陷 | 详情一次取 12 部触发 256 KB ⇒ 改 4 部一批；`/share/<hash>` HTML 跳转页 ⇒ `looksLikeDirectMedia()` 只收能直接播的站点 | 真网复测 |
+| 明文 http | 新增默认关闭的显式开关，只作用于 G1；E9 导入默认不变。取数「直连优先 + 短超时回退代理」 | E31/E32、F05–F07 |
+| 1.0.4 隔离 | 默认片库仍 6 条、默认 sourceId 不变、空查询顺序不变、撞 id 的第三方条目被丢弃、清空外部源可完整回退 | E15–E30、F19–F22 |
+| 门禁 | 新增 `verify_third_party_vod.dart` **120/120**（含离线端到端 import→栏目→适配器→可播地址）；旧 G06 如实更新 + G06b/G06c | `verify_all.dart` |
+| 未做 | GUI 人工走查、真机起播、三端播放、24 部逐条播放、晚高峰/跨日稳定性；legacy 老电视端无点播栏目 | — |
+| 全量门禁（重打前） | `flutter analyze` 0；`verify_all.dart` **37 步 / 3474 断言全绿**；legacy 268/268。重打后复跑 legacy-compat 268 / android-form 91 / third-party-vod 120 / vod-source-address 93 均绿 | 18:20 |
+| 重打（18:45，最终） | 单包 44,005,875 B `16bfa551…61f1f`、Windows 安装版 25,775,802 B `da88470f…7ebe`、便携版 33,401,239 B `9ae37d71…4d85`；单包 `badging` = 1.0.5/code 6、minSdk 16、targetSdk 36、24/24 断言；两平台 AOT 均检出 `ThirdPartyVodService` / `parseCmsDetails` / `vod_play_url` / `allowInsecureHttp`；便携包 31 条、`data/app.so` 与分发目录 sha256 一致 | `README.md` §47.6 |
+| 出包事故（已修） | `merge_single_apk.py` 版本号是命令行参数（默认 1.0.4/5），漏传 ⇒ 1.0.5 代码被打成 `Shunbo-1.0.4-full.apk` 并覆盖已发布基线。从 `_prev` 按 sha256 `393a5f6d…` 恢复 1.0.4，误标包改名隔离为 `*MISLABELED*`，重传参重打并 `badging` 复核。断言不校验 versionName 与 pubspec 同名，所以不会报错 | `dist/_prev/` |
+| 未推送 | 源码（含第三方接入）**未提交、未推送、未建 tag/Release**；等待明确指令 | `git status` |
+
+### 三十六、1.0.5 第二次修：候选地址的闭合失败回路（2026-11-11 19:05）
+
+| 项 | 结论 | 证据 |
+|---|---|---|
+| 截图病灶 | 当前选中 = 影视仓官方入口（https 合规但 277 KB HTML），报「超过 256 KB 上限」；唯一实测可出片的采集站被画灰、点不动 | 真机截图 |
+| 闭合回路 | 点得动的必然失败，能成的一个都点不动；用户没有第三条路 | 候选 × 格式 × 实测三维对照 |
+| 误诊点 | 「超过 256 KB」是字节上限，真实原因是返回**网页**而非接口 JSON，用户会以为换个地址就行 | `source_config_url.dart` 原逻辑 |
+| 修复① | `VodAvailability`（usable / pluginOnly / htmlPage）+ `isKnownUnusableSource()`：把「实测能否出片」与「格式是否合规」解耦 | B12–B16 |
+| 修复② | 点候选 = 选中 + 立即导入；明文 http 弹一次确认框（点击即显式放行，取消则什么都不做）；不可用候选只给原因 | F13 / F13b / F13c |
+| 修复③ | `fetchSourceConfigUrl(rejectHtml: false)` **默认关闭**，G1 链路传 true；新增 `htmlPage` 失败原因 + 纯函数 `isHtmlLikePayload` | C15–C22 / F13e / F13f |
+| 顺带修的 | `_addCustom` 由「只保存」改为「保存 + 导入」（按钮写的是「添加并使用」）；重启后 selectedUrl 落在不可用候选上回落内置；「当前选中」不再对必失败地址显示绿字 | D18–D20 / F13d |
+| 断言改写 | `G06c` 与 `F13` 原锁 `onTap: _busy || disabled ? null`，行为变更后**如实改写**，并拆成三条更细的断言（不是为过而改） | `verify_*.dart` |
+| 真网复测 | 采集站 ok，12 部 / 1 站成功 / 13 站失败跳过 / 1 插件站跳过，38 s；抽查地址 `206 + m3u8 + #EXTM3U + 分片`；官方入口明确报「返回的是网页」 | 19:00 |
+| 体验修正 | 导入期间显示「通常 20–60 秒」避免被当卡死；`maxSites` 8→14、`itemsPerSite` 8→12（8 站时只捞到 8 部） | `third_party_vod_service.dart` |
+| 门禁 | `flutter analyze` 0；全量 **37 步 / 3495 断言全绿**；legacy 268/268 | 19:08 |
+| 产物（19:12） | 单包 44,005,875 B `52504ca3…4ee65`、安装版 25,778,585 B `5b8879e4…4d7`、便携版 33,405,139 B `5213dadb…4663`；两平台 AOT 均检出 `isKnownUnusableSource` / `_confirmInsecure` / `_pickCandidate` / `isHtmlLikePayload` | `README.md` §48 |
+| 未做 | GUI 人工走查、三端真机播放、逐条播放验证；未提交 / 未推送 | — |
+
+### 三十七、五条点播地址实测与默认加载源（2026-11-11 19:40）
+
+| # | 地址 | 可达 | 形态 | 站点构成 | 采集站 | 片量 | 应用内导入 |
+|---|---|---|---|---|---|---|---|
+| 1 | `:16/8888` | 200 | JSON | 27 站全 type:3 | 0 | 0 | 失败（全插件型） |
+| 2 | `:55316/9981` | 200 | JSON | 117 站全 type:3 | 0 | 0 | 失败（全插件型） |
+| 3 | `47.96.82.41/config.json` | 200 | `application/json` | 20 采集 + 1 插件 | 11 可达 / 9 有直链 | 1,197,091 | **成功 12 部 / 1 站** |
+| 4 | `:924/924` | 200 | JSON | 2 采集 + 103 插件 | 2 可达 / 0 可播 | 248,507 | 失败（网页 + 分享页） |
+| 5 | `:20271/pps.bmp` | 200 | 伪装 BMP 的 JSON | 14 采集 + 136 插件 + 1 | 7 可达 / 6 有直链 | 824,191 | 成功 12 部 / 1 站 |
+
+| 项 | 结论 | 证据 |
+|---|---|---|
+| 默认源 | `http://47.96.82.41:5188/config.json`：可用站数（9）与片量（119.7 万）双第一 | §49.1 |
+| 常量 | `kVodDefaultSourceUrl` + `kVodDefaultSourceCandidate`，候选排内置片库之后 | B17 / B18 |
+| 新枚举 | `VodAvailability.noPlayable`：有采集站但只给网页跳转 / 分享页（`:924` 用） | B20 |
+| 开关即用 | `_enableWithDefaultSource()`：没选过地址就预选默认源并导入；已选过则不替换 | G15 / G16 |
+| 自动加载 | `VodAutoSource`（纯 Dart）：单飞、不重试、只认默认源；三个栏目页共用一次请求 | G01–G10 / G17–G19 |
+| 不打扰 | 开关关着 / 选中不是默认源 / 已有外部条目 ⇒ 一个请求都不发；失败只显示原因不弹窗 | G05–G08 |
+| 输入框 | 构造无初始值 + `_load()` 显式 clear，标签写「默认留空，不回填当前地址」 | G11–G14 |
+| 门禁修正 | 清单原文地址后带中文注释，`[^\s]+` 会把「（119.7」当 URL ⇒ 改用 URL 合法字符集；断言未放松 | B08 |
+| 门禁 | analyze 0；全量 **37 步 / 3521 断言全绿**（地址 116 / 第三方 144） | 19:35 |
+| 未做 | GUI 逐屏走查、真机起播、逐条播放验证；未提交 / 未推送 | — |
+
+| 产物（19:45） | 单包 44,005,875 B `ba4bba03…ad452`；安装版 25,781,954 B `16722de3…65648`（FV 1.0.5.6）；便携版 33,410,357 B `8ba02779…81f37`（31 条，app.so 一致） | `README.md` §49.6 |
+
+### 三十八、「只加载了 1 个站点」的两个真因（2026-11-11 19:42）
+
+| 项 | 结论 | 证据 |
+|---|---|---|
+| 现象 | 设置页「1 个站点 / 12 部（13 站失败跳过）」；20 个采集站实测可达 11 个 | 真机截图 |
+| 真因① | 网页判定**先看 Content-Type**，而苹果 CMS 站普遍回 `text/html` + JSON 正文 ⇒ 12 个可用站被误杀 | 列表可达 **1/20** |
+| 修法① | `isHtmlLikePayload` 改为**正文优先**：`<` → 网页；`{`/`[` → JSON（不看头）；其它才看头 | C23–C26 |
+| 修法①b | 判定提前到「首块到达」（新增 `firstSignificantByte`，跳 BOM/空白），277 KB 页面不再先撞 256 KB 上限 | C27 |
+| 真因② | `maxSites=14` < 配置里的 20 个 type:1 站点 ⇒ 第 15 名后的 4 个可用站从未被请求 | 代码 |
+| 修法② | `maxSites` 14→32、`itemsPerSite` 12→20、`kMaxThirdPartyItems` 60→**240** | C11 |
+| 修法②b | 串行改**分批并发**（批内 8 并行）：9 个失败站各等 8s+5s 代理，串行 >100s ⇒ 并发 42s | `_loadCms` |
+| 新增③ | `/play/<id>` 播放页可派生 `index.m3u8`（xluuss / jisuzyv / huyall 实测 200+#EXTM3U）；`/share/<hash>` 不行 | D12–D16 |
+| 派生纪律 | **必须先验一条**（`_deriveForSite` 取样实测 `#EXTM3U`）才整站改写，否则整站跳过 —— 不拿「猜的地址」填栏目 | D15 |
+| 结果 | 站点 1→**9**、条目 12→**180 部**、剧集 78→**5726**（全 m3u8）、耗时 38s→42s | 19:42 真网 |
+| 抽样验证 | 4 条（2 派生 + 2 原生）全 `200/206 + application/vnd.apple.mpegurl + #EXTM3U` | `curl -r 0-400` |
+| 剩余失败 | 11 站**全是真实失败**：DNS 3、TLS 2、超时 3、反诈重定向 1（`js96110.com.cn`）、真网页 1、`/share/` 3 | 逐站诊断 |
+| 门禁 | analyze 0；全量 **37 步 / 3531 断言全绿**（+10：C23–C27 / D12–D16） | 20:05 |
+| 未做 | GUI 逐屏走查、真机起播、180 部逐条播放验证；未提交 / 未推送 | — |
+| 产物（20:20） | 单包 44,022,259 B `0f5a078d…c8c1b`；安装版 25,782,843 B `977476af…51f0f6`；便携版 33,411,209 B `fde66651…cf9c83`（31 条、app.so 一致）；复跑 legacy 268 / android-form 91 | `README.md` §50.7 |
+
+### 三十九、海报图 / 站点上限 100 / 播放页控制 / 点播缓冲档（2026-11-11 21:10）
+
+| 项 | 结论 | 证据 |
+|---|---|---|
+| 图片 | 不是加载失败，是**从未发起请求**：`vod_pic` 没解析，卡片只有色块 + 首字 | `_PosterBlock` 旧注释「刻意不引网络海报」 |
+| 修法 | `VodItem.posterUrl` + `CmsEntry.pic` / `CmsDetail.poster` + `resolvePosterUrl`（补协议/拼相对/百分号编码/拒非法）+ `Image.network` + `cacheWidth` + 失败回落 | B01–B17 |
+| 实测 | 180/180 部带海报；9 个图床 **5 个可下载**（`200 + image/webp|jpeg`），4 个握手被掐（`errno=113`、`read 0 bytes`，http 同样不可达） | 21:00 逐主机探测 |
+| 站点上限 | `kMaxThirdPartySites` **32 → 100**（import 默认引用常量）；条目上限 240 → **360**；每站仍 20 部 | C01–C04 |
+| 外部代码 | 新增开关**默认开**：`type:3` 且 `api` 是 http(s) 的站点进入探测池（纯数据协议）；`csp_` 仍跳过并计数；本机不跑 jar/JS（无 JVM/JS 引擎） | C05–C17 |
+| 插件候选 | `isKnownUnusableSource` 不再一票否决插件型（原来点都点不动），保存后也不再被回落成内置 | D19 / D19b |
+| 预算 | 整轮 100 秒预算 + 批内 10 并发；超预算收工、已拿到的照常入库 | D06–D07 |
+| 播放页 | `PopScope` 逐级返回；选集抽屉（当前集高亮+自动聚焦）；暂停/播放；±10 秒；上下集（按有序集号，跳号也能接）；可拖进度条；4 秒自动隐藏；←→↑↓/Esc/媒体键 | E01–E10 |
+| 确认键 | 焦点在按钮上时 Enter/OK **让给控件**（`node.hasPrimaryFocus`），否则会变成暂停 | `_onKey` |
+| 切换慢① | 每秒 `setState` 重建整页 → 改 `ValueNotifier`（只重绘进度条） | `_position` / `_duration` |
+| 切换慢② | `inSection` 每次 build 重算 → 分栏缓存 + revision，同栏返回**同一实例** | E18–E21 |
+| 切换慢③ | 主线程 `jsonDecode` 上百个 100–400 KB 响应 → >48 KB 走 `Isolate.run`；分批入库 | E22 / D03 |
+| 卡顿 | 直播档参数（6s/4s）被点播共用 → 新增 `PlaybackTuner`：点播 30s/15s + `cache-pause` + 断线重连；离开切回直播档 | E11–E17 |
+| 边界 | Android 走 ExoPlayer 平台通道，无 mpv 参数链路 ⇒ 这一项只对 Windows 生效；不改原生代码 | `applyOption` 只认 `http-header-fields` |
+| 门禁 | analyze 0；全量 **38 步 / 3621 断言**（新增 `vod-playback` 89 条） | 20:58 |
+| 未做 | GUI 逐屏走查、真机起播、180 部逐条播放验证；源码未提交 / 未推送 | — |
+
+### 四十、直播串台 / 百万片量只取 180 / 点播页加载慢（2026-11-11 22:10）
+
+| 项 | 结论 | 证据 |
+|---|---|---|
+| 直播串台① | 不是没暂停：直播失活确已 `controller.stop()`，声音是停的 | `live_page.dart` `didUpdateWidget` |
+| 直播串台② | 真因是**渲染面没摘掉**：四个页面在 `IndexedStack` 里保活，`PlatformView`/纹理不随「不绘制」消失 | Android `TextureView` 混入合成；桌面 media_kit 纹理保留末帧 |
+| 直播串台③ | 状态漏洞：点播页失活只 `_pauseForLeave()`，`_view` 仍停在 `playing`，`PlayerStage` 还在树上 | 旧 `didUpdateWidget` |
+| 修法 | `PlayerStage.attachSurface`（false ⇒ 不建渲染面、给纯黑）+ 两页都传 `widget.active` + 失活走 `_leavePlaying()` 退到详情 + 起播前 `live.stop()` | I01–I06 |
+| 陷阱 | `didUpdateWidget` 里 **不能** `setState`（build 期 `markNeedsBuild` 抛断言）⇒ `_leavePlaying(rebuild: false)` | I04 |
+| 180 部真因 | 只请求 `?ac=list`（=`pg=1`）并丢弃 `pagecount/total`；实测 dyttzy `pagecount=4255 total=85082`、bfzy `8573/171459` | `parseCmsList` 只读 `list` |
+| 修法 | `CmsListing` 分页元信息 + `VodSourcePager` 游标轮转 + 优先 `?ac=detail&pg=N` 合并接口（1 请求 vs 6 请求）+ 跨站去重 | P01–P15 |
+| 多播放源 | `vod_play_url` 的 `$$$` 是多源，原来只取第一个 ⇒ 首源 `/share/` 网页的站被整站判死（电影天堂正是如此），改为「取直链最多的源」 | B04 改写 |
+| 死站判定 | 超时/DNS 一次即判死（这类站占一半），HTTP 5xx 给两次机会 | P15 |
+| 实测吞吐 | 16 批 / 75 秒 → **601 部**去重可播；接口统计从 85,082 读到 **1,322,947** | 22:00 真网 |
+| 加载慢真因 | 冷启动每次重跑网络（拉配置 + 20 站列表/详情，30–100 秒），无任何缓存 | 旧 `_ensureDefaultSource` |
+| 修法 | `VodLibraryStore` 落盘（含 Referer/海报/剧集，≤2500 条，4 秒节流）+ 12 小时新鲜期内零请求 + 超时收敛 + 检索结果缓存 | C01–C08 |
+| 实测冷启动 | 136 条 297 KB ⇒ 读盘 **38 ms**、恢复 **4 ms** | 22:05 探针 |
+| 门禁 | analyze 0；**38 步 / 3653 断言**（新增 P/C/I/S 共 32 条） | 22:08 |
+| 产物（22:12） | 单包 44,382,707 B `5cf8a0bb…196f0`（badging 1.0.5 / code 6 / min16 / target36、组装 24/24）；安装版 25,832,330 B `db55fc4f…fe266`；便携版 33,477,085 B `9fe6745a…bb30`（31 条，清单与 1.0.4 逐条一致） | `README.md` §52.6 |
+| legacy 独立包 | 重跑后 sha256 与 1.0.4 **逐字节相同**（`f94f70a8…`，3,544,604 B）⇒ 本轮改动全在 Flutter 侧，故 `versionName` 仍 1.0.4 / code 5，不跟着改 | §52.6 |
+| 未做 | GUI 逐屏走查、真机起播、601 部逐条播放；源码未提交未推送 | — |
+
+### 四十一、左栏底色与右栏统一（1.0.5 同版重打，2026-11-11 22:30）
+
+| 项 | 结论 | 证据 |
+|---|---|---|
+| 现象 | 截图里左栏整块实心深色、右栏直接是画面本身，两侧底色不一致 | 用户红标截图 406×1670 |
+| 取证 | 手写 PNG 探针采样：左栏 x=3…370 全区 `#121821`（**正是 `AppTheme.surface`**）；分界 x=372→376 由 `#121821` 一刀切到 `#5b3b32`，**无渐变无遮罩** | 逻辑 0…185 与 184 宽吻合 |
+| 命中哪一个 | 带 `shunbo` 副标 + 收起箭头 `<` ⇒ 宽屏浮层侧栏 `_SideBar`（184）；电视常驻轨 `_buildTvRail`（140）没有这两样 | `app_shell.dart` 两套 rail |
+| 修法 | 顶层 `const Color _railBackground = Colors.transparent;`，两处 rail 共用 | `app_shell.dart:45/411/574` |
+| 布局不变 | 宽度 140/184、内边距、导航项顺序（`AppSection.values`）、品牌区、设置入口**一字未动** | E 段 7 条断言 |
+| 取舍 | 透明后文字压在画面上，亮场景对比度下降；当前项仍保留 `surfaceHigh` 高亮 + 蓝左条。必要时一条常量可换半透明遮罩，但那不再是「透明」 | `README.md` §53.5 |
+| 门禁 | analyze 0；**38 步 / 3660 断言**（`verify_mobile_layout` 145→152，新增 E 段 7 条） | 22:28 |
+| 产物（22:30） | 单包 44,382,707 B `4b686211…10990eb5`（1.0.5/code 6、组装 24/24）；安装版 25,832,377 B `1d84cee3…5642839e`；便携版 33,477,083 B `e130e832…080b2879`（31 条） | `README.md` §53.7 |
+| 指纹 | `libapp.so` 与上一版同尺寸 7,144,328 B、哈希 `73ac65c0…` → `c90a1be2…` ⇒ 只改了一个颜色常量 | 前后对照 |
+| legacy | 未重打：本轮 `legacy/` 零改动 | `git status` |
+| 未做 | 真机/桌面观感确认（尤其亮画面上的文字对比度）；源码未提交未推送 | — |
+
+### 四十二、左栏改回「与右栏同一档」78% 半透明（1.0.5 同版重打，2026-11-11 22:45）
+
+| 项 | 结论 | 证据 |
+|---|---|---|
+| 反馈 | §53 的纯透明**太高**，导航文字看不清，要求「参考右栏的背景及透明度」 | 用户当轮消息 |
+| 右栏实际值 | 全工程唯一半透明面板：频道栏浮层态 `AppTheme.surface.withValues(alpha: 0.78)`；常驻双栏态全不透明 | `live_page.dart` 原 913 行 |
+| 修法 | `AppTheme.panelScrim` 收成唯一出口（`surface.withValues(alpha: 0.78)`），左右两侧栏都引它 | `theme.dart` / `app_shell.dart:44` |
+| 为什么 `final` | `panelScrim` 是算出来的，写死 `Color(0xC7121821)` 能 const 但改主题时会失同步 | `README.md` §54.3 |
+| 对比度（算过） | 78% 压白画面 ⇒ 底色 `#464B52`、次要文字 3.60:1、主要 7.76:1；典型亮场景 4.65:1/10.02:1；纯黑 7.63:1。纯透明时白画面仅约 2.3:1 | 逐档合成计算 |
+| 门禁 | analyze 0；**38 步 / 3664 断言**（E 段 7→11 条：唯一出口 / 两侧都引 / 别处不许写死 0.78 / 仍不画实心底色 / 宽度未变 / **不许退回 `Colors.transparent`**） | 22:44 |
+| 产物（22:45） | 单包 44,382,707 B `2f30b7de…34a553c0`（24/24）；安装版 25,832,919 B `9b929ae0…da6de016`；便携版 33,477,369 B `bf3ae6d3…ac731150`（31 条） | `README.md` §54.6 |
+| legacy | 未重打：`legacy/` 零改动 | `git status` |
+| 未做 | 真机/桌面观感确认；若 78% 仍偏透，一条常量改 0.88 即可（但会偏离「和右栏一致」）；源码未提交未推送 | — |
+
+### 四十三、点播顶部按设计稿重排 + 起播慢/播放卡（1.0.5 同版重打，2026-11-11 23:00）
+
+| 项 | 结论 | 证据 |
+|---|---|---|
+| 现象 1 | 顶部四样东西散堆：标题 / 接入说明 / 加载更多 / 320 宽搜索框，无层级无筛选 | 用户截图 814×74 |
+| 设计稿 | 三层：一级 tab（白字 + 短下划线）／筛选项（深色圆角标签 + 值词）／展开 + 排序 | 爱奇艺电影页 |
+| 做了什么 | 标题行（含右对齐 300 宽检索框）→ 源说明 → 加载状态 → 分类 tab 行 → 筛选面板（类型/地区/时间/排序 + 展开） | `vod_page.dart` `_header` |
+| **没做什么** | 资费 / 奖项 / 推荐三行**不做**：无对应字段，做出来就是点了永远返回空的死按钮 | `F25` 反向锁：`_filterRow(` 标签集合必须正好四维 |
+| 数据层 | `VodItem` 新增 `typeName/area/year`，在 `buildCmsItems` 一次填好；不从 `subtitle` 反解（顺序/分隔符随源站变，错位后表现是「筛了没反应」） | `vod_catalog.dart` |
+| 新逻辑 | `vod_facets.dart`：拆词 / 长尾丢弃（<2 次）/ 按命中数降序 / 时间按真实时间倒序 / 分档（>=2020 具体年，更早按年代）/ 三维「与」/ 稳定排序 / `VodFilter` 值相等 / facet 缓存 | 25 条断言 F01–F25 |
+| 视觉口径 | 结构与设计稿一致；**颜色不搬爱奇艺绿**，用本项目 accent `#4C8DFF`，否则会出现两套主色 | `theme.dart` |
+| 现象 2 根因① | `live.stop()` 后半段 `_gate.run(_safePause)` 排在正在进行的 tune 之后（`AsyncSerialGate` 严格串行），弱源 tune 8–12 秒 ⇒ 起播先干等十几秒 | `live_controller.dart:1447` |
+| 修法① | `.timeout(900ms)`：同步部分（epoch/watchdog/phase）早已完成，串台依赖的是「load 覆盖内核 + 失活页不建渲染面」，不依赖 pause 完成 | `I05`/`I07` |
+| 现象 2 根因② | 点播档 `demuxer-readahead-secs: 15` 起播阶段抢首帧带宽 | `E13` 改锁 6 |
+| 根因③ | `cache-pause-wait: 2` 白等 1 秒 | `E14` 改锁 1 |
+| 根因④ | 5 次 `setProperty` 串行 IPC，且每次起播（含连播）都重设 | `E18` 并发 / `E19` 幂等 |
+| 根因⑤ | `network-timeout` 默认 60 秒：连接挂死时画面冻一分钟才报错，用户感知是「卡死」 | `E17` 改 10 |
+| 卡的另一半 | 缓存低于阈值时 mpv 主动暂停等数据（`cache-pause=yes`）是**正确行为**，关掉只会花屏；根因是源站带宽，参数改不出带宽 —— 如实写进 README | `README.md` §55.二.5 |
+| 已澄清 | `demuxer-lavf-o` 的 `reconnect=1` 对 HLS 分片**不生效**（ffmpeg hls demuxer 自建 AVIOContext），上一版就有，本轮未动 | 同上 |
+| 黑屏无反馈 | 旧遮罩只看 `_session == null`，而 session 在 load 命令发出后即有值 ⇒ 首帧前纯黑。改盯 `PictureProbe.hasPicture`，出画才撤，15 秒兜底 | `_awaitingPicture` |
+| 详情页 | 播放按钮起播时图标换转圈、文案「正在打开…」 | `vod_page.dart` |
+| 门禁 | analyze 0；**38 步 / 3693 断言**（3664→3693，+29：E13/E14 改写、E17–E19、I05/I07、F01–F25、G11 改写） | 22:53 |
+| 产物（23:00） | 单包 44,399,091 B `8e67e776…cf9cc945`（1.0.5/code 6/minSdk16/targetSdk36、组装 24/24）；安装版 25,840,515 B `09d5aeeb…5cf17721`；便携版 33,489,087 B `c526c7ba…d868d566`（31 条） | `README.md` §55.四 |
+| AOT 取证 | APK `libapp.so` 7,144,328 B `d5589f1b…`、桌面 `app.so` 8,274,824 B `17b057ef…`，均含 `正在打开…` / `收起` | 双平台 |
+| 重打一次 | 初版打完后补了标题行窄窗口分支（`< 720` 检索框落到第二行，否则 300 宽输入框在手机竖屏横向溢出）⇒ 上面哈希对应补完之后的代码 | F24 |
+| legacy | 未重打：`legacy/` 零改动 | `git status` |
+| 未做 | **顶部布局只有静态确证 + 门禁，没有真机/桌面观感走查**（未拉起 GUI）；起播改善未做真机计时；源码未提交未推送 | — |
+
+### 四十四、点播底部控制栏重做（1.0.5 同版重打，2026-11-11 23:30）
+
+| 项 | 结论 | 证据 |
+|---|---|---|
+| 需求 | 参考主流播放器设计底部控制栏：播放暂停 / 进度条（拖动·缓冲·时间提示）/ 时长 / 音量 / 清晰度 / 倍速 / 全屏；悬停与激活反馈、悬浮数值预览、桌面+移动自适应 | 用户当轮消息 |
+| 改造前 | 一行 `位置 + Slider + 时长` + `Wrap` 里 7 个 `IconButton` + 10px 提示行 | 旧 `_bottomBar` |
+| 结构 | 三段轨（未缓冲白18% / 已缓冲白34% / 已播 `#4C8DFF`）→ 控制行（左：播放簇；右：时间·清晰度·倍速·音量·选集·全屏）→ 提示行 | `player_control_bar.dart` |
+| 进度条 | 自绘 `_TrackBar`：`Slider` 画不出缓冲段、拇指 48×48 命中区吃掉视觉长度、气泡无挂点 | `README.md` §56.4.1 |
+| 拖动 | 拖动只预览、`onHorizontalDragEnd` 才 seek（弱源连续 seek 会黑一下） | `K16` |
+| 悬停预览 | 气泡宽 64，左右夹取防半截跑出栏外；数字 `tabularFigures` 防进位抖动 | `K15` |
+| 缓冲夹取 | `vodBufferedProgress` 保证缓冲段不短于已播段（cache 扣减会让 buffered < position） | `K10` |
+| 音量 | 宽屏：图标静音 + 悬停展开 88px 滑条；中窄屏：进内联面板（触屏无 hover）。静音记旧值 | `K20` |
+| **清晰度** | **只有「自动」一档**：实测 `vod_play_from='dytt$$$dyttm3u8'`（线路名）、每集单地址 ⇒ 接口无画质档位。徽标改显示**实测解码分辨率**，面板如实说明不能切 | `K22` + `README.md` §56.4.4 |
+| 倍速 | 0.5/0.75/1.0/1.25/1.5/2.0；内核不支持时**不改 UI**（不假装生效） | `K29` |
+| 全屏 | 状态归 `AppShell`（与直播共用），`VodPage` 收 `fullscreen` + `onToggleFullscreen`；`_back()` 先退全屏 | `K25`/`K26` |
+| 内联面板 | 不用下拉菜单：电视上弹出层会让焦点跑出播放页、且是两段式 OK 操作 | `README.md` §56.5 |
+| 响应式 | 三档：full ≥900 / medium ≥560 / compact <560（按最坏内容宽度倒推，两档会在 700–1000dp 挤成两行） | `K23` |
+| 性能 | 五个读数全走 `ValueNotifier` + `Listenable.merge`，只重建控制栏；音量也走 notifier；拖动预览留在控制栏内部 | `K24`/`K30` |
+| 顺手修 | 旧的 `IconButton` 水波纹画在 Material 上、被视频盖住 ⇒ 悬停高亮一直不可见。新控件自绘底色 | `K18` |
+| 内核 | 新增 `BufferProbe` / `PlaybackRateControl`，`PictureProbe` 补 `pictureWidth/Height`；media_kit 全实现，门禁 `_FakePlayer` 同步 | `K27`/`K28` |
+| 门禁 | analyze 0；**38 步 / 3723 断言**（3660→3723，+63；点播门禁 150→180）。改写 E04/E05/E07（随实现如实改，未放宽），新增 K01–K30 | 15:20 |
+| 产物（23:30） | 单包 44,448,243 B `7153a972…b1905c4f`（1.0.5/code 6/minSdk16/targetSdk36、组装 24/24）；安装版 25,853,598 B `f549786b…c7ccdd34`；便携版 33,508,950 B `77b0508c…6f5b8d4d`（31 条） | `README.md` §56.11 |
+| AOT 取证 | APK `libapp.so` 7,144,328 B `9e919dfd…`、桌面 `app.so` 8,323,976 B `9fb4e286…`，均含 `清晰度`/`播放倍速`/`退出全屏`/`静音` | 双平台 |
+| legacy | 未重打：`legacy/` 零改动 | `git status` |
+| 未做 | **没拉起 GUI 看观感**；倍速未验真机音画同步；全屏未实际进入观察；源码未提交未推送 | — |
+
+### 四十五、短视频栏目 + 本地内容检索记录（1.0.5 同版重打，2026-11-12 08:2x）
+
+| 项 | 结论 | 证据 |
+|---|---|---|
+| 需求 | 左栏新增「短视频」并迁移已获取的全部短视频、后续新增统一归入，原菜单与播放不变；接口四字段（片名/类型/年份/地区）持久化为本地记录、可检索、启动优先读、随接口同步、去重去过期，且栏目-记录-检索三者一致 | 用户当轮消息 |
+| 真实类目取证 | `bfzy` 58「短剧大全」下挂 59 重生民国 / 61 现代言情 / 68 AI漫剧（`type_pid=58`）；`dyttzy` 36「短剧」；`tyyszy` 54「短剧」/ 73「ai短剧」。`?ac=detail&pg=N` **不带 `class`** ⇒ 分页器并行多请求一次 `?ac=list` 探类目表 | 21 站点实测 |
+| 归类三层 | 类目表父链（`CmsCategoryTable.isShortVideo`，`seen` 防自指成环）+ 文本关键词（短视频/短剧/微剧/漫剧/电影解说/预告片/片花/短片/微电影）+ 英文枚举；`normalizeVodItem()` 是接口新数据 / 老缓存恢复 / 记录读回的**唯一归一入口** | `vod_catalog.dart` / `third_party_vod.dart` |
+| 父链优先 | 在 `sectionFromCms()` 先短路，`短剧大全` / `AI短剧` 不再被「剧」字归进电视剧 | 同上 |
+| 探测不连累内容 | 每站只探一次（`categoriesProbed`）；失败**不调 `_fail()`**，只退化成文本兜底 | `vod_pager.dart` + P14b/P15b |
+| 菜单只能追加末尾 | `AppSection.values` 同时决定导航顺序与 `IndexedStack` 下标，插中间会让原四栏整体错位；`shortVideo` / `shortVideos` 都追加在最后，起播仍走 `orchestrator.startPlayback` | `app_shell.dart` + K25 改写 |
+| 本地记录单真相 | 沿用 `vod-library.json` v1→v2，**不建第二份索引 / 不上 SQLite**；`VodContentIndex.items` 派生 `VodItem` → 栏目 `VodLibrary.restore()` 与检索 `filterVodItems()`/`search()` 同源，无需事后对齐 | `vod_content_index.dart` |
+| 去重 / 更新 / 过期 | `vodContentKey` = `片名\|年份`；`vodContentFingerprint` 变化才就地替换并刷新播放地址表；TTL 30d；同 sourceId 增量 upsert、换源整库重建；`.tmp`→delete→rename 原子落盘 | 同上 + `vod_library_store.dart` |
+| 冷启动优先本地 | 记录新鲜 ⇒ 立即渲染 + 后台单批差量（1 批 / 12s / `preserveExisting=true`，**不参与首屏**）；否则走原全量加载。`preserveExisting` 防后台刷新先清空几百张卡片 | `vod_page.dart` / `vod_session.dart` |
+| 检索 | `片名:` / `类型:` / `地区:` / `年份:` 等字段前缀 + 自由文本「与」；纯本地不发网络；空查询仍返回原列表引用 | `vod_search.dart` + G 段门禁 |
+| 老缓存迁移预演 | 真实 v1 718 条 → 去重 **614**；电影 176 / 电视剧 426 / 纪录片 1 / **短视频 11**；回填 year·area 各 376（**不猜类型**）；`年份:2026`→346、`地区:大陆`→169、`短剧`→10。差的 1 条是 `[电影解说]`，规则生效非漏；首次读回即写回 v2 | 真实 `AppData/Local/Shunbo/vod-library.json` |
+| 门禁 | analyze 0；**39 步 / 3826 断言**（3723→3826，+103 = 新增 101 + P14b/P15b 2）；新增 `verify_vod_content_index.dart` A–F 组 101 条接入第 39 步；P14/P15 拆分「翻页」与「类目探测」两套计数、K25 全屏透传 4→5 处，**如实改写未放宽** | `verify_all.dart` |
+| 产物（08:2x） | 单包 44,612,083 B `83de6f2a…a075ef30495a7d17`（1.0.5 / code 6 / minSdk16 / targetSdk36，组装 **24/24**）；安装版 25,862,854 B `294e224f…701c`；便携版 33,680,463 B `aa5b91c5…3c`（31 条目、CRC 自检通过） | `README.md` §57.10 |
+| AOT 取证 | APK 双 ABI `libapp.so` 与 Windows `data/app.so`（8,356,744 B `a8382006…`）均检出 `VodContentIndex`/`vodContentFingerprint`/`shortVideo`/`parseCmsCategories`/`preserveExisting`/`vod-library.json`；UTF-16LE 中文检出「短视频/片名/本地检索记录/短剧/电影解说」；zip 内 `app.so` 与分发目录逐字节一致 | 包内字节串检索 |
+| legacy | 未重打：`legacy/` 零改动（`git status` 为空） | `git status` |
+| 未做 | 没拉起 GUI 看短视频栏目观感、未真机起播短视频；差量同步未做「接口新增/改名/下架」长时间实测；源码未提交未推送 | — |
+
+### 四十六、全屏回退 / 栏目图标 / 电影归属 / 一次加载（1.0.5 同版重打，2026-11-12 10:1x）
+
+| 项 | 结论 | 证据 |
+|---|---|---|
+| 需求（四项） | ①点全屏不得退回上一级，进入后隐藏 Windows 任务栏（真全屏），保留 Esc/F/按钮退出；②按截图补「短视频」标题图标；③电影栏目只展示电影类片源；④取消「加载更多」，初始化一次加载完整目录并持久化，检索优先查本地 | 用户当轮消息 |
+| **全屏回退根因** | 不是路由 `pop`，是 `AppShell.build()` 的**两棵树**：旧写法全屏 `return Scaffold(body: content)`、非全屏 `Scaffold(body: Stack([Positioned.fill(content), …rails]))` ⇒ 同位置 widget 类型从 `Stack` 变 `IndexedStack`，Element 无法复用，整棵子树 unmount ⇒ 点播页 `_view`/`_item`/`_query` 全部归零，渲染回初始视图 | `app_shell.dart` §58.1 |
+| 修法：树形稳定 | 宽屏恒为 `Stack([Positioned.fill(content), if (!_fullscreen) rails…])`，全屏只让侧栏兄弟不渲染；窄屏恒三槽位 `Scaffold`，全屏只把 `appBar`/`bottomNavigationBar` 传 `null`（**槽位保留**）。不用 `GlobalKey` 硬保 State | 同上 |
+| 退全屏三条路径 | ①控制条按钮；②`PopScope` 补 `_applyDisplayMode()`（否则 Android 停在 `immersiveSticky` 且继续锁横屏）；③`HardwareKeyboard` 全局兜底 `Esc`/`F`，**只在直播页 + 已全屏**接管，不抢点播页语义 | `_onGlobalKey` |
+| Windows 真全屏三要素 | 去边框 `SetWindowLong(GWL_STYLE & ~WS_OVERLAPPEDWINDOW \| WS_VISIBLE)` + 铺满 `GetMonitorInfo(rcMonitor)`+`SetWindowPos(SWP_FRAMECHANGED)` + 任务栏让位 `ITaskbarList2::MarkFullscreenWindow` | `flutter_window.cpp` |
+| 刻意不用 | `SHAppBarMessage(ABM_SETSTATE, ABS_AUTOHIDE)`：改的是用户**全局**任务栏偏好，崩溃/强杀后永久停在自动隐藏；`MarkFullscreenWindow` 只作用于本窗口生命周期 | 同上 |
+| 退出还原 | `GWL_STYLE` + `SetWindowPlacement`（最大化进必须最大化出，只还原尺寸会掉成不大不小）；`SWP_FRAMECHANGED` 必须带，否则非客户区等下次 resize 才布局，看着像「卡在全屏」 | 同上 |
+| Alt+Enter | `WM_SYSCOMMAND`+`SC_KEYMENU`+`lparam==VK_RETURN` 会被 `DefWindowProc` 当系统菜单吞掉；捕获后**不直接切窗口**，`InvokeMethod("toggleFullscreen")` 回 Dart 统一翻转，避免「窗口切了但 `_fullscreen` 还是 false」双真相 | 同上 |
+| 桌面分支前置 | `DisplayMode.apply` 的 `if (isDesktop)` **排在** `if (!onAndroid) return;` 之前 —— 原来那行会把桌面端短路，全屏请求永远发不出去 | `display_mode.dart` |
+| 栏目图标 | `_sectionIcon` 覆盖五个 `VodSection`（movie/video_library/public/smart_display/category），22px + `textSecondary`，与标题 22sp/w600 并排不抢戏；`other` 也给图标（检索结果可能落在它上面） | `vod_page.dart:910` |
+| **电影混入根因** | 不是筛选错，是归类错：老 `sectionFromName()` 兜底 `return movies`。真实记录电影 470 条中 64「大陆综艺」/52「足球」/46+46 日韩港台综艺/61「现代都市」/9「记录片」全这么混进来 | `vod_catalog.dart` §58.4 |
+| 归属三改 | ①新增 `VodSection.other` 追加末尾（枚举序号=导航顺序+`IndexedStack` 下标）；②`vodSectionFromText()` 返回 `null` 表证据不足、**不再兜底电影**，顺序：短视频→纪录片/剧集→排除综艺体育→电影；③`normalizeVodItem()` 唯一归一入口，电影栏目拿不出证据的外部条目迁 `other` | 同上 |
+| 判据取舍 | 电影用「以『片』结尾」而非 `contains('片')`（`片花`/`预告片` 是短视频）；**不读 `genre`**（题材标签，真电影也带「纪录片」「喜剧」，会误踢犯罪片）；**不读副标题「正片」**（9 条 NBA/羽毛球赛事正是靠这两个字混进来） | 同上 |
+| 最后一道闸 | `isMovieSectionItem()` 防没走过归一的外部安装路径；内置 6 条 `VodCatalog.sourceId` 一律放行（它们本就是「电影栏目非空」的兜底） | 同上 |
+| 取消加载更多 | 启动 `main()` 整份读回 `vod-library.json`（几毫秒）→ 首屏直接完整目录；后台 `_revalidateInBackground` 按 `kVodFullSyncMaxBatches`/`Budget` 一次跑完、逐批落盘、`preserveExisting:true` 不清空；`_moreRow()` 只剩状态告知，**按钮已删**；滚到底 `kAutoLoadExtentAfter=800` 顺手接一批 | `vod_page.dart` |
+| 检索本地优先 | `_filteredFor()` 先 `localMatches(q)` 拿命中 id，再在栏目列表取交集，最后叠 facet+关键词 ⇒「本地记录→检索结果→栏目卡片」同一份数据，不会搜到却点不开；**不发网络**（否则「优先读本地」名不副实） | 同上 |
+| 门禁改写（未放宽） | `edge-handles`「全屏左侧浮层不渲染」改为「浮层不出现 **且** 不另起树」；「窄屏底栏」改为锁「只置空槽位值」；`mobile-layout` 163 条新增桌面分支/窗口下发/两路互斥/槽位传 null/退全屏收系统栏/键盘兜底；`vod-content-index` F13 与 `vod-source-address` G11 改为「本地优先 + 顺序不可颠倒」 | `verify_*.dart` |
+| 门禁结果 | `flutter analyze` 0 问题；全量 **39 步 / 3854 断言全绿**（3826→3854，+28） | `verify_all.dart` 104.6s |
+| C++ 编译证据 | `flutter build windows --release` **61.7 s** 成功：`MethodChannel<EncodableValue>` 模板实例化、`ITaskbarList2`(ole32)、`GetMonitorInfo`(user32)、shell32 全部链接通过 | 构建输出 |
+| **产物（三端同版重打 1.0.5+6）** | `full.apk` 44,612,083 B `ed0f7cdc…6c9a66b6`（组装 24/24）；`windows-x64-setup.exe` 25,873,368 B `070d72cd…a20040c7`（ISCC 27.1 s）；`windows-x64-portable.zip` 33,542,328 B `fb06c9ce…147f3f8`（31 条目、`testzip` 无坏项）。旧包全部归档 `dist/_prev/` | `sha256sum` |
+| 新代码进包取证 | APK 双 ABI `libapp.so` 与 Windows `data/app.so` 均检出 `shunbo/window`/`setFullscreen`/`toggleFullscreen`/`window_channel`（英文串走 **UTF-8**，`utf16le=False`）+ `vodSectionFromText`/`normalizeVodItem`/`isMovieSectionItem`/`localMatches`；中文串（UTF-16LE）`短视频`/`电影解说`/`目录已完整`/`后台自动补齐` | 字节检索 |
+| Windows 分发目录 | `dist/windows/Shunbo-1.0.5/` **31 文件 / 20 个 DLL**（含 10 个 VC++ CRT）；`shunbo.exe` 131,584 B、`data/app.so` 8,373,128 B 为本轮 10:13 新构建（旧为 08:23 的 92,160 B / 8,356,744 B） | `ls -la` |
+| Windows 烟测 | 静默安装 `/VERYSILENT /DIR=dist\_smoke105` 退出码 **0**、落地 **33 文件 / 86,035,530 B**、`data/app.so` 大小一致；静默卸载退出码 **0**、目录彻底移除无残留。**未拉起 GUI** | `Start-Process -Wait` |
+| 清理 | 删除未跟踪临时探针 `tooling/_tmp_decode_probe.dart`、`tooling/_tmp_migrate_probe.dart` | `git status` |
+| legacy | 零改动 | `git status` |
+| 未做 | **没在 Windows 上真进一次全屏看观感**（任务栏是否让位/Alt+Enter 是否触发/退出是否还原最大化），只做编译+静态确证；**没在 Android 真机验证「点全屏不回退」**（Element 复用是运行期行为）；电影归属未拉 GUI 数 470 条实际落点；后台全量同步未做「接口新增/改名/下架」长时间实测；源码未提交未推送 | — |
+
+### 四十七、点播播放中按返回必闪退（Surface use-after-release，1.0.5 同版重打，2026-11-12）
+
+| 项 | 结论 | 证据 |
+|---|---|---|
+| 需求 | 「影片播放过程中点返回上一级 系统会崩溃并闪退」——不是偶发、不限片子，**只要在播放态按返回就崩** | 用户当轮消息 |
+| **崩溃时序链** | 返回 → `PopScope(canPop: _view == browse)` 为 false → `_back()` → `_leavePlaying()`：同步 `setState(_view = detail)` **同一帧**摘掉 `PlayerStage` → `AndroidView` dispose → `PlayerSurface.dispose()` 先 `surface?.release()`，而 `unawaited(_pauseForLeave())` 的 `pause()` 还在飞行中 ⇒ 渲染线程继续往已释放的 native buffer 提交帧 → SIGSEGV，**无 Dart 栈、只有闪退** | `vod_page.dart:273` / `PlayerSurfaceFactory.kt` |
+| **根因** | `MpvMethodHandler.detachSurface()` 旧实现只把字段置空，注释写「真正的释放由 dispose 负责」，但 **dispose 也从未调用过 `engine?.setSurface(null)`**（全仓库 `setSurface` 只有 `attachSurface` 那一处）⇒ `ExoPlayerEngine` 长期持有已 `release()` 的 `Surface` | `MpvMethodHandler.kt:60` |
+| 已排除①：重复释放 | `surface` 是「先 release 后置 null」，两条销毁路径谁先到谁生效，第二次拿 null 直接跳过。**问题是顺序不是次数** | 同上 |
+| 已排除②：Dart `setState` 时机 | 返回时同步改 `_view` 是**正确**的（`didUpdateWidget` 那条 `rebuild: false` 就是为避开 build 期 `setState` 单独写的）。摘渲染面是预期行为，摘的时候没解绑才是 bug | `vod_page.dart:265` |
+| 已排除③：`_applyLiveProfile` | `LibMpvPlayerController` 在 Android **没实现 `PlaybackTuner`**，那个 `await` 是 no-op，不构成时序风险 | — |
+| 修法①（核心） | `detachSurface()` 改为**先 `engine?.setSurface(null)` 再 `surface = null`**：换集时 `attachSurface` 会重新补上，不影响续播 | `MpvMethodHandler.kt` |
+| 修法② | 两条销毁路径统一为「`host.detachSurface()` → `surface?.release()` → `surface = null`」：`onSurfaceTextureDestroyed` 与 `dispose()` 都是 | `PlayerSurfaceFactory.kt` |
+| 修法③ | 布局监听从匿名类改为 `private val layoutListener` 字段，`dispose()` 第一步 `removeOnLayoutChangeListener`。旧写法**没有句柄可注销**，销毁过程中仍会 `scale.apply` 到正在销毁的 `TextureView`（源码注释自认「ANR/崩溃风险」） | 同上 |
+| 修法④ | `VideoScaleController.apply` 首行加 `if (!view.isAttachedToWindow) return`：`detach()` 只从集合移除，挡不住已在飞行中的 `main.post {}` | `VideoScale.kt` |
+| Dart 侧 | **一行没动**：`_leavePlaying()` 签名与 `_view = _item == null ? …` 原样，`I04` 断言继续通过 | `git diff` |
+| 门禁新增 | `verify_mobile_layout` D 段 +4 条（`setSurface(null)` 存在 / `detachSurface` 早于 `release` / `layoutListener` 可注销 / `isAttachedToWindow` 守卫），新增 `_orderOf()` 助手专门校验**顺序敏感**逻辑 | 167/167（163→167） |
+| `_orderOf` 教训 | 第一版写「全体比较」，把两条销毁路径混在一起直接误报失败。真实代码序列是 `a b a b`，语义必须是**配对**（每个 `b` 就近配一个未配对的 `a`）。**门禁助手本身也要按真实代码形态设计** | 同上 |
+| 门禁结果 | `flutter analyze` **0**；`verify_mobile_layout` **167/167**；`verify_channel_contract` **19/19**（方法名集合未变、双向差集仍为空）；全量 **39 步 / 3858 断言全绿**（3854→3858，+4，只追加未放宽） | `verify_all.dart` |
+| legacy | 零改动 ⇒ legacy 独立包未重打 | `git status` |
+| 未做 | **本机无 adb**，拿不到 logcat，无法本地复现再验证 —— 时序链是**静态推断**（代码路径 + Android Surface 语义），修复按正确时序改写而非「复现后打补丁」；**「播放中按返回现在是否真的不崩」必须用户真机实测**；源码未提交未推送 | — |
+
+### 四十八、内置检索索引 + 启动校验 + 动漫栏目（1.0.5 同版重打，2026-11-12 14:20）
+
+| 项 | 结论 | 证据 |
+|---|---|---|
+| 需求（三项） | ①`config.json` 索引目录单（约119.7万条）完整进包、按栏目分片压缩、检索按栏目取；②启动校验「用户设定接口」与「内置/已下载索引」是否一致，一致读本地进播放、不一致从接口同步，并明确一致性依据/失败回退/各状态提示/更新覆盖策略；③左侧栏新增「动漫」栏目并说明归类规则 | 用户当轮消息 |
+| **口径变更（必须告知用户）** | 内置的**不是完整目录**，是**精简检索索引**。`?ac=detail` 单条实测 **17,216 B**，`vod_play_url` 占 **13,595 B**（79%）⇒ 135 万条 ≈ **21 GB**，不可能打进任何安装包。分工改为：**索引负责「搜得到」，详情接口负责「播得了」**（点开才用 `?ac=detail&ids=` 回源） | 「21 GB」推导见 README §60.0 |
+| 索引行格式 | `站点下标 \t vod_id \t 类目字典下标 \t 片名`（文本，非二进制——便于裸 `dart run` 与 Python 双向交叉校验） | `pack`/`builtin_index.dart` |
+| 体积压缩四步 | 只存四字段（17,216→约30 B/条，**573×**）+ **片名前端编码**（按片名排序后只存「与上一行公共前缀长度+后缀」，13.24 B/条）+ 按栏目 6 片 + gzip -9 | 同上 |
+| 前端编码两侧同口径 | Python 在 **UTF-8 字符边界**回退（不能切多字节中间）；Dart `applyFrontCode` 对越界前缀容错。差一字节的症状是「某些片名搜不到」，极隐蔽 ⇒ 门禁逐片逐行校验 | `B04`/`C03`/`C04` |
+| 分片键 | `VodSection.name` 六片：`movies`/`series`/`documentaries`/`shortVideo`/`anime`/`other`；**打包侧与读取侧共用同一套词表**（`sectionFromCms` 顺序=文本短视频→父链短视频→父链动漫→`sectionFromName`），门禁 F03/F04 断言两侧关键词集合逐字一致 | `verify_vod_builtin_index` |
+| **一致性依据三档** | ①**接口地址**（`manifest.sourceUrl` vs 用户设定）——故意放最前：地址变了索引里 id 全指向另一个站，先加载再发现用户只会看到点不开的卡片，且这项**离线可判**；②**新鲜度**（`generatedAt` ≤ 7 天，未来时间戳不判过期，防打包机时区错）；③**完整性**（分片读不到 / `records==0`）。只读分片存在性不整片解析（全解 13 MB 会让冷启动多一秒） | `vod_boot_index.dart` |
+| 六态与文案 | `idle`/`checking`/`readyBuiltin`/`syncingNetwork`/`fallbackBuiltin`/`incomplete`；每态一句人话**全在状态机里**，页面只显示（避免「诊断页说已加载、页面说正在下载」）。默认（未开外部地址）`allowSync=false` ⇒ 不偷偷联网，落 `fallbackBuiltin` 并说明「未联网校验」 | 同上 + `_bootRow()` |
+| **覆盖策略** | 内置比缓存新 ⇒ **覆盖**（升级就为拿新片）；比缓存旧 ⇒ **不覆盖**（降级/重装不能删用户数据）；接口地址变了 ⇒ **覆盖**（旧 id 全错）。只看 `generatedAt`+`sourceUrl`，**不看条数**（站点挂掉条数会少但内容可能更新）⇒ `shouldReplaceCache()` | `main.dart` 缓存恢复段 |
+| 启动时机 | 校验挂在**首帧之后**（`addPostFrameCallback`）：本地读完几十毫秒，但判定不一致会触发几秒~几十秒的网络同步，放 `runApp` 前会把首帧钉死 | `main.dart` |
+| 检索：按栏目懒加载 | 真机 API18 上 147 万条 `VodItem` 至少 400 MB ⇒ 只做「解 gzip → 按 `\n` 切行 → 命中才建对象」；片名靠「上一行完整片名」滚动变量还原。`BuiltinIndexService` 按 sectionKey 缓存解压文本、`_loading` 并发去重 | `vod_builtin_service.dart` |
+| 检索：两段式 | `_filteredFor` 是**同步**的不能 await ⇒ 输入变化 debounce **180 ms** → 异步写 `_indexHits` → 同步合并。`_indexSeq` 保证「先回来的旧结果不覆盖后回来的新结果」；`_indexHitsQuery` 保证「输入变了但结果没回来」时不拼旧结果 | `vod_page.dart` |
+| 合并顺序 | 本地命中**在前**、索引命中**在后**（本地已可播、索引还要回源），同名片名去重 ⇒ 不会出现同一部片两个卡片。计数文案同步改口径（`本地 N + 索引 M 条`），否则「30 / 2 部」自相矛盾 | `_mergeIndexHits` / `_countLabel` |
+| **回源为何不用 append** | `append()` 发现 `sourceId` 变了会 `_clearExternal()` ⇒「从索引点开一部片」会把已同步的几万条外部目录**整批清空**。这种事故不崩不报错，只是「升级后片库突然空了」，极难反推。新增 `adoptResolved()`：只注册剧集/地址表 + 保证该 sourceId 有适配器，不碰 `_external`、不碰当前外部源指针 | `vod_library.dart` + 门禁 N01–N14 |
+| 回源 id 口径 | `源id:站点key:vod_id`，与网络同步**完全一致** ⇒ 同一部片从索引点开 / 从网络同步点开，续播记录是同一条 | `main.dart` `fetchDetail` |
+| 回源明文 http | **无条件放行**：索引里的站点地址是打包时固化进安装包的，不是用户输入——与「用户手输地址要显式放行」是两件事；不放行则默认索引点开全黑，等于没有 | 同上 |
+| 回源栏目 | 用**索引里已定好**的 `section`（`vodSectionFromKey(hit.section)`），不按 `typeName` 重猜：详情接口不保证回 `type_name`，重猜会把动漫/短剧打回电影栏目 | 同上 |
+| 回源条目不进栏目 | 索引十几万条，塞进片库既撑爆一万条上限，也会让「栏目」变成另一个检索结果页 ⇒ **索引只负责搜得到** | `adoptResolved` 注释 |
+| 第 3 项：动漫栏目 | `VodSection.anime` 与 `AppSection.anime` 都**追加在枚举末尾** ⇒ `IndexedStack` 下标=枚举序号=导航顺序，**前五项一个都不动**。规则：①短视频优先（`AI漫剧`/`漫剧` 归短视频）②类目父链（`type_pid`，子类目名无「动漫」也能认）③其余归 anime ④证据不足归 other | `app_shell.dart:410` / `vod_catalog.dart` |
+| 真实动漫类目 15 个 | `动漫`/`动漫片`/`动漫电影`/`国产动漫`/`日韩动漫`/`欧美动漫`/`港台动漫`/`海外动漫`/`中国动漫`/`日本动漫`/`动画片`/`AI动漫`/`AI漫剧`/`漫剧`/`有声动漫` | 打包侧词表 + 门禁 F03 |
+| 门禁新增 3 套 | `vod-builtin-index` **91**（真实产物：manifest 自洽/唯一片名数与每名上限/行数与 sha256/前缀编码还原/词表逐字一致/分片可检索）；`vod-boot-index` **61**（六态全转移图 A–M，含 `shouldReplaceCache` 六条与源码护栏）；`vod-builtin-service` **115**（运行期检索/栏目隔离/limit/缓存/命中反查/回源参数/adoptResolved 不清外部目录/同名归并一张卡/回源失败换源）；全量 **42 步 / 4150 断言**（3858→4150，+292） | `verify_all.dart` |
+| K25 如实改写 | 全屏透传断言原写死「直播1+点播4=5」，加动漫栏目后变 6 处 ⇒ 改为「点播页实例数（从 `VodSection.\w+,` 数出）+1」。**未放宽**：加栏目不破门禁，少给某页透传仍会红 | `verify_vod_playback.dart` |
+| 门禁踩坑① | `Gate.dart` 的 `expectAssertions` 是 **bool**（只校验「有断言数」），传 int 直接编译错误 —— 条数写在 note 文案里 | `verify_all.dart` |
+| 门禁踩坑② | 新门禁 N03 首跑失败，原因是**样本不真实**：测试用 `VodItem` 没给 `typeName`，被电影栏目 `isMovieSectionItem` 整条滤掉；不是 `adoptResolved` 清空了目录。样本必须带 `typeName` 才测得出真问题 | `verify_vod_builtin_service` |
+| 门禁踩坑③ | `SourceRegistry` 只有 `get(id)` 没有 `byId`；适配器取址是 `resolvePlayUrl(mediaId, episode)` / `getEpisodes(mediaId)`，都是 **async** | `source_registry.dart` / `source_adapter.dart` |
+| **全量抓取实测** | 13 站 / **29,318 页** / **1,473,395 条**原始记录（8 站全程不可用：`wwzy`/`ruyi`/`ffzy`/`wolong`/`dbzy`/`ikun`/`suonizy` + 中途退出的站；`wujin` 中途复活已纳入） | `build/_fetchlog/run5.log` |
+| **打包产物** | **605,106 条 / 381,968 唯一片名 / 6.18 MB**（movies 159,715 · series 71,916 · documentaries 14,270 · shortVideo 179,176 · anime 60,281 · other 119,748）；安装包 42.5 → 约 49 MB，仍低于 60 MB 门禁 | `assets/vod_index/` |
+| **每名留 2 条（`--keep-per-title`）** | 全留 ⇒ 19 MB 顶满门禁且同片 4 张卡；只留 1 条 ⇒ 4.55 MB 但丢失换源能力。折中：每名最多 2 条且**优先不同站**，8.8 B/条单价把总量压到 6.18 MB，每个片名都有备胎。Dart 侧 = 检索同名归并一张卡（`_alts`）+ 回源失败依次换源（`_tryResolve`） | §60.11 + 门禁 Q01–Q13 |
+| 抓取坑①：**按站钳制 pagesize** | `dyttzy`/`bfzy` 支持 100，`tyyszy`/`zuid`/`yinghua`/`wujin` 只给 **20** ⇒ 按请求值算页数会让那几站只抓 20%，且产物自洽不报错 | 探测首屏条数再算页数 + 打包复核「真实条数 ≥ total×90%」 |
+| 抓取坑②：**类目表字段方言** | `dyttzy` 用 `type_id/type_pid/type_name`，其余站 `id/pid/name` ⇒ 只认一种则整站类目表为空 | `load_classes()` 同时认两套 |
+| 抓取坑③：**缺类目表静默归错栏目** | `dyttzy` 类目表没抓到那轮，8.5 万条全掉「其他」，行数/sha256/总数全对 | 打包**硬检查**：有数据无类目表 ⇒ 直接报错（`--allow-missing-classes` 放行） |
+| 抓取坑④：**`dead` 标记误伤已抓数据** | 重启探活 `dyttzy` 被 WAF 回 403 ⇒ 标 `dead` ⇒ 整站 8.5 万条被静默排除 | 可用性改以**本地已抓页**为准：一页都没有才算死站 |
+| 明确不做 | ①不在打包时探活排优先级（403 可能是三万请求的临时限流，且让构建不可复现）；②不全量入包（体积）；③回源条目不进栏目（撑爆 1 万条上限） | §60.13 |
+| **产物（14:2x 同版重打）** | 单包 `dist/Shunbo-1.0.5-full.apk` **51,149,994 B / 48.78 MB** `b1675cfa84651f44…d07c2ff9b77bff02`；Windows 安装版 **32,374,374 B** `a813b348…0cfb3106`；便携包 **40,054,225 B / 38 条目** `7ffea53f…a9ea3adb`。版本仍 `1.0.5+6`（`aapt2 badging`：versionCode 6 / versionName 1.0.5 / minSdk 16 / targetSdk 36） | `dist/` |
+| **进包取证** | 单包内 7 个索引文件与 `assets/vod_index/` **逐字节一致**（6,487,505 B）；`libapp.so` 检出 `assets/vod_index/` / `builtin:` / `builtin-index`（UTF-8）与 `内置索引`/`已加载内置索引`/`正在校验本地索引`/`接口地址与内置索引不一致`（UTF-16LE）；Windows `data/app.so` 同批串；合并单包 24/24 断言全过（channels.json 字节一致 / ijk so 只进 v7a / apksigner @16@18 / 无 androidx.startup） | 取证明细见 README §60.14 |
+| 体积账 | 单包 42.5 → **48.78 MB**（+6.28，索引 6.19 MB），距 60 MB 门禁余 11 MB；桌面安装版 25.8 → 30.87 MB；便携包 33.5 → 38.20 MB | 同上 |
+| 未验证 | 内置索引真机表现：首屏耗时、6 MB 分片解压内存峰值、检索延迟、点开回源失败率 —— 本机无 adb，只静态确证「资产在包内 + 代码路径存在」 | — |
+
+### 四十九、Windows 覆盖安装卡在 d3dcompiler_47.dll（code 5 拒绝访问，1.0.5 同版重打，2026-11-12 14:5x）
+
+| 项 | 结论 | 证据 |
+|---|---|---|
+| 现象 | 装 `Shunbo-1.0.5-windows-x64-setup.exe` 到一半弹框：`DeleteFile failed; code 5. 拒绝访问。` 目标 `D:\Programs\Shunbo\d3dcompiler_47.dll`，点 Try again 反复同样报错 | 用户实拍截图 / README §61 |
+| **根因（易误判）** | **不是权限/只读属性**，是**映像已被映射**：`shunbo.exe` 把 `d3dcompiler_47.dll`/`flutter_windows.dll`/`libEGL`/`libGLESv2`/`libmpv-2` 作为 image section 载入，进程存活期间内核禁止删除被映射的映像文件（改代码段会让已映射页失效）⇒ `DeleteFile` 直接 `ERROR_ACCESS_DENIED` | 独占打开测试：进程在跑时抛 `being used by another process` |
+| 判据（可复用） | 目标文件能否以 `ReadWrite` + `FileShare.None` 独占打开：能 = 锁已释放；抛异常 = 仍被映射。比看任务管理器可靠（僵尸条目会骗人） | 实测脚本 |
+| 现场实况 | 4 个进程条目里只有 2 个真身：`2184`（713.9 MB）、`28408`（1365.9 MB）在跑；`9292`（11:04）、`29580`（11:25）已在 0 MB 僵尸态 —— **用户先后起了两个实例都没关**，叠加两个 taskkill 报成功但内核对象未回收的残留 | `Get-CimInstance Win32_Process` |
+| **防线一** | `[Setup] CloseApplications=force` + `CloseApplicationsFilter=*.exe,*.dll` + `RestartApplications=no`：交给 Restart Manager 发 WM_CLOSE，程序能正常存盘退出（温和路径）；`RestartApplications=no` 是因为 `[Run]` 段自己会拉新程序，交回 Inno 会开两份 | 三份 iss |
+| **防线二（不可省）** | `[Code] PrepareToInstall` 里 `taskkill /F /IM shunbo.exe` 兜底：Restart Manager 对多实例 / 僵尸 / 无响应窗口会漏。退出码 `0`=杀到、`128`=本来没进程、其余重试 3 次（间隔 400 ms）；**杀到后必须 `Sleep(1000)`** —— 进程退出到句柄真正释放有延迟，省掉就是「偶发」code 5 | 同上 |
+| 为何不用 `restartreplace` | 它把被占文件登记进 `PendingFileRenameOperations`（HKLM），per-user `PrivilegesRequired=lowest` 写不进去；且要重启才生效，用户会以为装完了其实没换 | — |
+| 为何不用 `AppMutex` | 干净但要求 `shunbo.exe` 原生入口创建互斥体，得改 `windows/runner/main.cpp`；为装包给运行时加全局约束，收益不抵改动面 | — |
+| 改动位置（3 份同步） | `dist/windows/Shunbo-1.0.5.iss`（**实际出包用这份**）、`tooling/windows_installer.iss`（通用）、`tooling/windows_release.iss`（1.0.4 留档） | 均已含 `CloseApplications` + `[Code]` |
+| 编码约束（踩过） | iss 必须 **UTF-8 BOM + CRLF**，否则 Inno 按 ANSI 解析、中文全乱码。脚本改写后逐份复验 `BOM=True / LF-only=0` | 三份复验通过（119/108/119 行 CRLF，LF-only 全 0） |
+| **实测（最坏场景）** | 先起两个真实实例把 DLL 占死（独占测试确认"being used"）→ `setup /VERYSILENT /SUPPRESSMSGBOXES /NORESTART` → **EXITCODE 0**，两个真实进程双双消失，只剩僵尸条目 | 安装日志「Installation process succeeded / Need to restart Windows? No」 |
+| 实测（文件完整性） | 逐字节比对 `dist/windows/Shunbo-1.0.5` ↔ `D:\Programs\Shunbo`：**38/38 一致（sha256）**，缺失 0、不符 0；索引 7 分片 **6,487,505 B** 与 APK 内同批一致 | 比对脚本输出 |
+| 实测（GUI 启动） | 装完启动：PID 存活、52 线程、主窗口标题「顺播 shunbo」、加载索引后工作集 1332.6 MB（与旧版同量级，非本次引入） | `Get-Process` |
+| 副产品：tmp 残留 | 失败/中断安装会在 `{app}` 留 `is-XXXXXXXXXX.tmp`（先写临时名再改真名的中间态），本次残留 `is-D962JD8YVR.tmp`（=unins000.exe 尺寸）与 `is-PYKVLLUB4H.tmp`（=libmpv-2.dll 尺寸），**不会被下次安装自动清理**，已手工删 | 目录列表 |
+| 产物 | `dist/Shunbo-1.0.5-windows-x64-setup.exe` **32,374,781 B** `c01f62c7d886bd…e6b0360b`；修复前 `a813b348…0cfb3106` 存 `_prev/…before-lockfix.exe`。版本仍 `1.0.5+6` | `sha256sum` |
+| 现场救济（给用户的） | 任务管理器结束所有 `shunbo.exe` → 回向导点 Try again。**先解当下再补脚本** —— 顺序反了会让人以为「重装就能好」 | 本次实际处置顺序 |
+| 未验证 | 只在 per-user（`PrivilegesRequired=lowest`）路径实测；提权安装（`{autopf}` 到受保护目录）未测。多用户会话切换场景未测 | — |
+
+### 五十、「类型」全是国家名 + 有内置索引还在同步（1.0.5 同版重打，2026-11-12 15:2x）
+
+| 项 | 结论 | 证据 |
+|---|---|---|
+| 现象 1 | 「类型」筛选行是 `欧美剧 / 国产剧 / 日本剧 / 韩国剧`——一排国家名，和「地区」行撞车；顶部快捷 tab 行是同一批词，一屏出现三遍 | 用户截图 1 |
+| 现象 2 | 顶部写「已加载内置索引 60.5 万条（2026-11-12 打包）」，下一行却是「目录同步中：已加载 10000 部，接口统计 1475989 部」 | 用户截图 2 |
+| **根因 A（取词层）** | `vodTypesOf()` 读 `item.typeName`（采集站栏目类目），**从没读 `item.genre`**（`vod_class` 真题材）。栏目类目本身就是「地区 + 体裁」写法，所以「类型」行必然长成国家名 | `vod_facets.dart` 旧代码 `final raw = item.typeName;`；`vod_catalog.dart:360` 注释早写着「`type_name` 是栏目类目，`vod_class` 才是用户理解的类型」 |
+| **根因 B（数据层）** | 列表接口（`?ac=list`）不返回 `vod_class`，只有详情接口返回 | 本机 1 万条缓存实测：`type` 空值 **0%**（78 值）、`genre` 空值 **71.5%**（128 词）|
+| **根因 C（索引层）** | manifest 只存 78 个类目 **ID**，没存名字；回填写 `typeName: hit.typeId` ⇒ 从索引点开的片，类型显示成「25」 | 旧 manifest `types:["25",…]`；打包脚本 `pack_vod_index.py` 其实已拿到类目名，只是没写出 |
+| **修法 1：类型取词** | `genre` 优先；为空才回落 `typeName`，且用 `isNonGenreLabel()` 剔掉「地区 + 体裁」与纯体裁词。**不纯用 `genre`**：71.5% 条目没有它，纯用会让七成条目点了没反应 | `vod_facets.dart` `vodTypesOf` / `isNonGenreLabel` |
+| 剔除判据（可复用） | 剥掉体裁后缀（`电视剧/网络剧/动画片/纪录片/动漫/动画/综艺/电影/短剧/剧场/节目/视频/片/剧`）后：核心是地区词 ⇒ 剔（`欧美剧`→欧美）；核心为空 ⇒ 纯体裁剔（`电影`/`剧`）；否则保留（`动作片`/`篮球`/`纪录片`） | 同上 |
+| **修法 2：地区脏值** | 有些站把 `vod_area` 当更新状态用，「地区」行冒出 `已完结`/`全80集（合全集）`/`正片`。新增 `looksLikeVodArea()`：含数字、含 `集/完结/更新/正片/预告/花絮/抢先`、含 `HD/BD/TC`、长度>8 ⇒ 不进地区行 | 改后地区行：大陆/内地/中国大陆/美国/日本/韩国/泰国/台湾/英国/中国台湾/加拿大/印度 |
+| **修法 3：索引补名字** | manifest 增 `typeNames`（中文名）+ `typeSites`（该项属于哪个站），523 项 | `pack_vod_index.py` payload |
+| **为什么必须带站点** | `type_id` 是**各站自己的编号**。第一版按裸 `type_id` 建全局表，实测 **314,179 行**同名冲突（`1` 在 A 站=电影、B 站=电视剧），会把「电视剧」标到一部电影上——不报错，只是标错。改成 `(站点, type_id)` 后**站内冲突 0 行** | 打包日志：`类目字典 523 项（站点 × 类目）/ 无名字 5 项 / 站内同名冲突 0 行` |
+| 查不到名字怎么办 | 返回**空串**，绝不回退成 id —— 宁可这条没有类型，也不要用户看到「25」 | `typeNameOf()` + 门禁 A21 |
+| **根因 D（同步）** | 两条链路互不通气：A 启动校验（13 次修，首帧后跑）判 `readyBuiltin` 不联网；B 后台全量同步（11 次修，`initState` 就跑）只看「开关开 + 默认源」，判据里**没有 `vodBoot`** | `vod_page.dart` `_ensureDefaultSource` |
+| 时序是死结 | B 在首帧前跑、A 在首帧后跑 ⇒ B 读 `hasLocalIndex` 时 phase 还是 `idle`，**即使加了判据也会判错** | 同上，故必须引入 `settled` |
+| 这条同步永远追不上 | 单次上限 `kVodCacheMaxItems=10000` vs 接口 1,475,989 部 ⇒ 覆盖率 **0.68%**；每轮 240 批/5 分钟，每批重写 16 MB JSON；游标纯内存不持久化 ⇒ 冷启动从第 1 页重来 | `third_party_vod.dart` 常量 |
+| **修法 4：三道闸** | ①`VodBootController` 新增 `settled`（未开始时立刻返回，不挂住）；②`_ensureDefaultSource` 先 `await boot.settled` 再判 `hasLocalIndex`，够用直接 return；③`_revalidateInBackground` 进入前 + 每批循环里都复查 `!boot.hasLocalIndex` | `vod_boot_index.dart` / `vod_page.dart` |
+| **修法 5：文案** | 旧「目录同步中：已加载 N 部，接口统计 1475989 部」——分母注定追不到。新「后台增量同步中：已加载 N 部 · 内置索引 60.5 万条已可直接检索」；内置索引就绪时整行不显示 | `_moreRow()` / `_wanCount()` |
+| **实测（真实数据）** | 本机真实 1 万条缓存：改前类型行 `AI漫剧/短剧/爽文短剧/现代都市/篮球/国产动漫/欧美剧/足球/国产剧/大陆综艺…`；改后 `AI漫剧/剧情/爽文短剧/现代都市/篮球/奇幻/古装/足球/喜剧/爱情…`。类型词 36 个，仍有类型词的条目 **74.8%**（改前 100%，但七成是错的） | 临时探针（已删）|
+| 实测（体积） | 索引 6,482,828 → **6,613,466 B**（6.18→6.31 MB，+130 KB）。下标 78 项→523 项，数字位变宽压缩率略降；仍在 60 MB 门禁内 | 打包日志 |
+| 门禁 | `flutter analyze` 0 issue；**42 步 / 4186 断言**（上轮 4150，+36）：`vod-playback` F03a–F03i(+9)、`vod-builtin-index` A15–A21/F07–F08(+9)、`vod-boot-index` N01–N06/S01–S06(+12)、`vod-builtin-service` H09–H12(+6) | `dart run tooling/verify_all.dart` |
+| 产物（三件） | APK `dist/Shunbo-1.0.5-full.apk` **51,297,450 B** `b0e9491132ff6e09…428ffb72`（单包 24/24 断言过）；Windows setup **32,509,706 B** `8e2c2b36a197a4e8…b13346193`；portable zip **40,190,250 B** `a79cf3f190d829bf…fdb4c8572`。版本仍 `1.0.5+6` | `sha256sum` |
+| 进包取证（APK） | 7 个索引文件与仓库逐字节一致，合计 **6,634,112 B**；APK 内 manifest `total=605106 类目=523 名字=523 站点=523`；`libapp.so`(arm64) 检出 `assets/vod_index/`、`typeNames`、`typeSites`、`条已可直接检索`、`后台增量同步中`（中文按 UTF-16LE） | zipfile 取证脚本 |
+| 进包取证（Windows） | 静默覆盖安装 EXITCODE **0**（上一轮补的 `CloseApplications`+`taskkill` 防线生效）；`dist/windows/Shunbo-1.0.5` ↔ `D:\Programs\Shunbo` **38/38 逐字节一致**；GUI 启动存活、51 线程、窗口「顺播 shunbo」、工作集 1269.8 MB | 安装日志 + 比对脚本 |
+| 未验证 | ①真机（API18/armv7a）上 `settled` 的冷启动耗时、内置索引点开后的类型显示；②「大陆/内地/中国大陆」仍是三个词未归一；③同站内同名不同义类目仍会合并（实测 0 行，暂不处理） | — |
+| 教训 | ①**字段注释写对了、代码没读它**——注释不是实现，门禁要断言行为不是断言注释；②**新能力上线必须回头收敛旧调用点**（13 次修的内置索引没有回头管 11 次修的全量同步）；③**时序也是判据**：在 A 之后才成立的结论，B 在 A 之前读一定会读错，得给个「等结论」的入口；④**同名不同义的主键必须先加维度**（`type_id` 单靠自己是跨站唯一的幻觉） | — |
+
+### 五十一、进入点播即加载索引片源 + 接口校验五态（1.0.5 同版重打，2026-11-12 16:2x）
+
+| 项 | 结论 | 证据 |
+|---|---|---|
+| 需求 | 进入点播先查「已保存索引是否有有效片源 + 记录的接口与当前设定是否匹配」；匹配直接把索引片源灌进播放列表；不通过走接口输入流程（初次必弹）；提交地址后同址直接加载、异址重新获取并生成新索引目录文件（沿用默认目录处理规则）。要求状态可分、来源唯一、列表与最终索引一致 | 用户第十六次修需求 |
+| **修前落差** | 内置索引**只在搜索框里存在**：`vodBoot.readyBuiltin` 只表示「可检索」；`_buildBrowse` 读 `VodLibrary.inSection`（外部目录缓存）；`BuiltinIndexService.search()` 空 query 直接返回空；界面写「已加载 60.5 万条」而网格一条索引片源都没有 | README §63.1 |
+| 五态状态机 | `vod_index_gate.dart`：`checking/ready/needAddress/building/failed`，纯 Dart 无 IO。判据顺序不可换：接口未设定（离线可判，保证初次必弹）→ 生成目录匹配 → 内置目录匹配 → 其余 `needAddress` 且区分「索引缺失」/「地址不匹配」 | `evaluateVodIndexGate` |
+| 有效片源判据 | `total > 0 && sourceUrl.trim().isNotEmpty`：缺地址的历史文件不能算有效，否则会「和任何地址都匹配」 | `VodIndexSnapshot.matches` |
+| 提交两分支 | `loadExisting`（地址一致，**零网络**，初次填默认源地址秒开 60.5 万条）/ `rebuild`（异址取片源 → 写 `vod-index.json` → 重跑完整校验）。`submit()` 先落设定再重跑校验，不硬塞临时结论 | `decideVodIndexSubmit` |
+| **来源唯一三道锁** | ①`origin` 单值枚举、非 ready 恒 null（门禁 B19）；②`_buildBrowse` 的 `sameSource` 守卫同时比 `_poolOrigin == gate.activeOrigin` 与 `_poolSourceUrl == gate.lastUrl`；③离开 ready 即 `_resetIndexPool()` 且 `_poolSeq++` 作废在途结果 | `vod_page.dart` |
+| 列表不再混用 | `vodLibrary.inSection(` 从列表路径移除（门禁 F14a 反向锁死）；旧 F14 改写成 F14 / F14a–c 四条**等价强度**新断言，不是删除或放宽 | `verify_third_party_vod.dart` 152 项 |
+| **等距采样** | `BuiltinIndexScanner.collect()`：`stride = ceil(分片条数/每页)`，命中 `行号>=offset && (行号-offset)%stride==0`，续载 offset+1 取「每段下一张卡」。**不能顺序取前 N 行**：按片名排序后 movies 前 20 行里 18 行是 `#`/`0.`/`&quot;` 开头符号片名。前端编码必须逐行维护 `previous`，不命中也要走完 | 真实分片探针：首屏 120 条、解压 2.53 MB 文本、续载 120 条零重复 |
+| 新索引目录 | 数据目录 `vod-index.json`，与内置 manifest 同构（`version/sourceUrl/generatedAt/total/sections/items`），同地址判据、同按栏目加载、同 `.tmp`+rename 原子写盘；条目自带 `episodes`，点开即播 | `vod_index_directory_store.dart` |
+| 能力边界 | `rebuild` = `VodSession.start(autoBatches: 12, budget: 90s)`，受 `kVodCacheMaxItems = 10000`，是「本次取回的目录」不是接口 147 万全量；全量抓取是打包侧 Python（30,169 页）的事 | README §63.6 |
+| 四处配套 | `VodLibrary.adoptMany()` 批量挂播放链路（只 notify 一次）；`_filteredFor` 把 `vodMatches(i,q)` 池内匹配并进 id 集合（否则列表条目不进 VodLibrary，搜索全空）；六页共享 gate ⇒ `_onIndexGateChanged` 加 `if (!widget.active) return` 防止一次解 6 个分片；generated 模式检索改查同一份目录 | 同上 |
+| 后台同步退场 | `_ensureDefaultSource` 先 `await vodIndexGate.settled`，ready/needAddress/building/failed 全提前 return。理由：单次 1 万条 vs 接口 147 万 = 0.68%，每批重写 16 MB JSON，游标不持久化，且属于**另一个来源** | README §63.8 |
+| 冻结前四处修补 | ①`rebuild` 硬编码 `allowExternalCode:true` ⇒ 三参数透传（门禁 D26/H26）；②「60.5 万 条」多空格；③非激活页不加载分片；④换来源清空旧 `_indexHits` 且 generated 检索同源 | 探针 + 复核，产物重打两次 |
+| 门禁 | `flutter analyze` 0 issue；**43 步 / 4321 断言**（上轮 42 / 4186，+1 步 +135）。新增 `verify_vod_index_gate.dart` **132 项**（A 值对象 / B 全转移 / C 两分支 / D 控制器 / E 编解码 / F 等距采样 / G 浏览入口 / H 静态护栏） | 冻结源码复跑 `verify_all.dart` 104.9 s |
+| 产物（三件） | APK `dist/Shunbo-1.0.5-full.apk` **51,412,138 B** `59778307…07f5f4`（单包 24/24 断言过）；setup **32,527,590 B** `65fb99f9…c9895`；portable **40,214,643 B** `404a30e2…5a7f6`。版本仍 `1.0.5+6` | `sha256sum` |
+| **最终 setup 实测** | `/VERYSILENT /SUPPRESSMSGBOXES /NORESTART` **EXITCODE 0**，`Installation process succeeded / Need to restart Windows? No`（十四次修两道防线生效）；`dist/windows/Shunbo-1.0.5` ↔ `D:\Programs\Shunbo` **38/38 逐字节一致**（缺失 0 / 不符 0），索引 7 分片 **6,634,112 B**，manifest `total=605106 / sections=6 / typeNames=523`；`data/app.so` 检出 `vod-index.json`/`VodIndexGatePhase`/`loadExisting`/`allowExternalCode` 与中文串「正在校验片源索引目录」（UTF-16LE）；GUI PID 1316 / 55 线程 / 窗口「顺播 shunbo」/ 1187.9 MB | 安装日志 + 哈希比对 + `Get-Process` |
+| 收尾 | README §63（63.1–63.12，含最终门禁数与产物指纹）、CHECKLIST 五十一、当日日志与长期 `MEMORY.md` 铁律已同步；临时探针 `tooling/_tmp_gate_probe.dart` 已删 | — |
+| 未验证 | ①真机 API18/armv7a：等距采样解 6 MB 分片的内存峰值、首屏 120 卡滚动帧率、生成目录条目点开即播；②异址 `rebuild` 未用真实第三接口跑完整 GUI 流程（只做逻辑门禁 D09–D13 + 临时目录写读往返）；③`assets/vod_index/` 仍未被 git 跟踪，将来提交必须一并纳入，否则干净克隆打包缺内置索引 | — |
+| 纪律 | 未提交、未推送；`legacy/` 零改动；不改播放参数；版本 `1.0.5+6` | `git status` |
+
+### 五十二、可见条目海报异步补齐 + 检索条件目录级 + 统计数与手动刷新（1.0.5 同版重打，2026-11-12 18:2x）
+
+| 项 | 结论 | 证据 |
+|---|---|---|
+| 需求 | ①本地/索引片源列表卡片要有背景图，在线按条目取对应海报；新增 / 刷新 / 切换片源时图与条目准确匹配；②只对当前页可见条目异步取图，翻页继续取；缺失 / 失败 / 加载中不得阻塞列表；③检索条件改为从检索目录动态加载，完整覆盖目录内全部可筛项，目录变化同步更新；④目录为空 / 异常要在检索区给明确空态或错误反馈，且不阻断列表与检索；⑤（追加）「全部」后面加统计数据 + 手动刷新 | 用户第十七次修需求（含两张截图） |
+| **修前落差** | 索引条目 `posterUrl` 恒空 ⇒ 卡片全色块；`?ac=detail` 带 `vod_pic` 但只在点开详情时才取。筛选条件由 `VodFacetsCache.of(revision, all)` 统计**当前已加载的 120 条**，再叠 `minCount=2`/`maxTypes=36`/`take(9)`/`take(18)` 四层截断 | README §64.1 / §64.4 |
+| 实测口径 | 内置索引电影栏目 **159,715 条 / 23 个类目名**，旧 UI 只显示 8 个词；地区与时间整行消失（精简索引无 `vod_area`/`vod_year`）且不说明原因 | 真实分片统计 |
+| 海报服务 | `vod_poster_service.dart`（纯 Dart）：`request()` 同步入队 + 60 ms 合并窗口 + 每批 8 条 / 3 批在途；装配层按站点分组、每组 10 条一次 `?ac=detail&ids=`；失败记 `_dead` 不重试；缓存上限 2000 | `verify_vod_posters_facets.dart` C 组 |
+| 只看可见条目 | 请求由 `_Poster.initState` 发出，网格是 `SliverChildBuilderDelegate` ⇒ 只有进视口的卡片才 build；翻页 / 续载自然触发新一批 | 同上 D07 / D10 |
+| 图与条目不串 | 缓存键 `scope \u0000 item.id`；`scope` = 来源 + 接口地址 + 目录时间戳 + 条数；`switchScope()` 清缓存并 `_generation++` 让在途批次作废；回填按 `hit.id`（含站点下标）不按 `vod_id` | 同上 C09 / D08 / D12 |
+| 不阻塞 | `loadingBuilder` / `errorBuilder` / 无图都回落到同一个色块 `_fallback()`；条目文字与点击行为不变 | 同上 D09 |
+| 条件目录 | `vod_facet_directory.dart`（纯 Dart）：内置索引 `facetOptionsFromShard()` 只累加 `int`（不建 60 万对象），生成目录 `facetOptionsFromItems()` 遍历条目四维；`minCount=1`、无上限、UI 不再 `take(9)` | 同上 A / D04 / D16 |
+| 变更同步 | 缓存键 `目录身份 \u0000 栏目`；目录一换即新键自动重载；旧条件里不存在的选中值自动清除并提示 | 同上 B06 / D06 |
+| 空 / 异常反馈 | 五态 `idle/loading/ready/empty/error`；三种非就绪态都有明确文案 + 「重试」，且固定写「列表与检索可继续使用」；缺维度写「本目录未提供地区 / 时间字段」不静默隐藏 | 同上 D03 / D05 |
+| 「全部」统计数 | 取**本栏目整份目录条数**（内置=分片 `records`；生成=文档该栏目条目数），弱化小字跟在「全部」后；目录未就绪时不显示而不是显示 0 | 同上 D21 / D22（反向锁死不许用 `_indexPool.length`） |
+| 手动刷新 | 同行右端常驻「刷新」，依次 force 重取条件 → 重算条数 → `_loadIndexPage(restart:true)` 重排列表 → `switchScope()` 重取海报；刷新中禁点、旧列表继续显示；失败文案带「列表保持原样，可重试」 | 同上 D23 / D24 |
+| 门禁 | `flutter analyze` 0 issue；**44 步 / 4397 断言**（上轮 43 / 4321，+1 步 +76）。新增 `verify_vod_posters_facets.dart` **76 项**；旧 `G11` 按惯例改写为等价强度新断言（仍纯 Dart + `localMatches(q)`，条件改 `catalogFor(`） | `verify_all.dart` 130.9 s |
+| 产物（三件） | APK **51,461,290 B** `b61a1854…b5ff4`（单包 24/24 断言）；setup **32,543,376 B** `7d82e6b6…ae6e3`；portable **40,237,048 B** `569a3622…de0e3`。上一版归档 `dist/_prev/1.0.5-fix16/` | `sha256sum` |
+| 安装实测 | `/VERYSILENT /SUPPRESSMSGBOXES /NORESTART` **EXITCODE 0**；`dist/windows/Shunbo-1.0.5` ↔ `D:/Programs/Shunbo` **38/38 逐字节一致**；索引 7 分片 6,634,112 B；`app.so` 检出「全部」「刷新中」「检索条件已从片源索引目录载入」等中文串（UTF-16LE）与 `_manualRefresh`/`VodPosterService`/`facetOptionsFromShard`；GUI PID 30196 / 82 线程 / 1,038.3 MB | 安装日志 + 哈希比对 + `Get-Process` |
+| 未验证 | ①真机 API18/armv7a：120 张卡海报批量请求的弱网耗时与内存峰值、`facetOptionsFromShard` 解 6 MB 分片耗时；②生成目录分支四维全量统计未用真实第三接口跑过；③「刷新」按钮遥控器可达性未上真机走查 | — |
+| **红标收尾（18:5x）** | 标题行「内置索引 · 已展示 480 / 60.5 万条」整段去除；「全部」后面那排类型词（剧情片…理论片）去除（与下方「类型」整行完全重复）；片源统计挪到「全部」右侧显示为 `共 60.5万条`。`_countLabel()` 在 ready 时返回空串、`_titleBar()` 空串连同前置间距一起不渲染；`_typeTabs()` 只留 `全部` + 统计 + 右端刷新；`_bigCount()` 去掉「万」前空格，避免拼成「60.5 万 条」 | README §64.9 |
+| **二次重打（18:56–18:58）** | `flutter analyze` 0 issue；**44 步 / 4399 断言**（+2）；`vod-posters-facets` 76 → **78 项**（`D04` / `D21` 按新口径改写，新增 `D25` 标题行不重复统计、`D26` 一级条不含 `facets.types`）。产物：APK 51,461,290 B `5b531b83…1460c`、setup 32,542,472 B `38a71553…a2a92`、portable 40,236,026 B `5a451dab…582cd`；覆盖安装 **EXITCODE 0**（安装前有一个活着的 49 线程 `shunbo.exe` 被 `taskkill` 兜住）、38/38 逐字节一致、GUI PID 21808 / 49 线程 / 1036.9 MB。上一版归档 `dist/_prev/1.0.5-fix17/` | `sha256sum` + 安装日志 |
+| 纪律 | 未提交、未推送；`legacy/` 零改动；不改播放参数；版本 `1.0.5+6` | `git status` |
+
+### 五十三、切栏目自动带图 + 栏目分桶缓存 + 检索框数字键被吞（1.0.5 同版重打，2026-11-12 19:1x）
+
+| 项 | 结论 | 证据 |
+|---|---|---|
+| 需求 | ①点播栏目之间切换时自动加载对应片源背景图并缓存，**切回已访问过的栏目无需重新加载**；②修复检索条无法输入数字（例如搜 2020 年份的电视剧） | 用户第十八次修需求（含检索框截图） |
+| **修前落差 A** | `VodPosterService.kCacheCap = 2000`，写入超限就 `_urls.clear()` + `_dead.clear()` —— 六个栏目各 120 张首屏，划两屏即撞上限，一撞把**所有栏目**的图一起清掉 | README §65.1 |
+| **修前落差 B** | 切回栏目时 `didUpdateWidget` → `_enterIndexGate()` → `gate.check()` 广播 → `_onIndexGateChanged()` **无条件** `_loadIndexPage(restart: true)` → `_resetIndexPool()`，120 张卡全部重建 | 同上 |
+| **修前落差 C（数字键）** | `ChannelNumberInput` 用 `HardwareKeyboard.instance.addHandler` 全局钩子，挂在 `LivePage` 而 `LivePage` 在 `IndexedStack` 里保活 ⇒ 只要你打开过直播页，这个 handler 就一直注册着；数字键被它 `return true` 吃掉后，Windows 引擎不再 `TranslateMessage` ⇒ 没有 `WM_CHAR` ⇒ `TextField` 收不到数字 | README §65.4 |
+| 分桶缓存 | 存储改 `Map<bucketId, _PosterBucket>`，桶 ID = `目录身份 \u0000 栏目`（`bucketKeyOf`）。每桶上限 `kGroupCap = 600`，**超限只清本桶**；桶数上限 `kMaxGroups = 24`，按 `tick` 做 LRU | `verify_vod_posters_facets.dart` E 组 |
+| 切栏目不清图 | `switchScope()` 收窄为「只丢弃不属于新目录身份的桶」，同身份直接 `return` —— 切栏目等于空操作，切回必然命中 | 同上 E04 |
+| 切回不重灌列表 | 新增 `_poolStamp` + `_poolMatchesCurrentSource()`（来源枚举 / 接口地址 / 目录时间戳三条都对得上才复用），`_onIndexGateChanged()` 只在不等时 `restart`；`batch.isEmpty` 也写这三个字段，避免空栏目每次广播都解压分片 | 同上 D28 |
+| 页面接线 | `_VodCard` 新增 `posterGroup`、`_Poster` 新增 `group`，一律传 `widget.section.name`；`didUpdateWidget` 把 `old.group != widget.group` 也算需要重新对齐 | 同上 D27 |
+| 数字键修复 | ①`live_page.dart`：`enabled: widget.active`；②`channel_number_input.dart`：`_onKey` 开头 `if (_editingText) return false;`，`_editingText` 用 `primaryFocus.context` 判 `EditableText`（含祖先查找） | 同上 D30 |
+| 检索框本身 | 没有任何 `inputFormatters`、`keyboardType` 也没设死；门禁 D31 **反向锁死**「不许出现 `FilteringTextInputFormatter`」 | 同上 D31 |
+| 门禁 | `flutter analyze` 0 issue；**44 步 / 4413 断言**（上轮 44 / 4399，+14）。`vod-posters-facets` 78 → **92 项**：新增 E 组 9 条（纯 Dart，含「切回命中缓存不发请求」「超限只清本桶」「LRU」「在途批次不污染」）、D27–D31 5 条；`D07`/`D08` 按新签名改写，`C14` 收紧到 `kGroupCap` | `verify_all.dart` 116.5 s |
+| 产物（三件） | APK **51,461,290 B** `390f1fe6…b9d48e`（full 46,998,476 / lite 27,878,043，单包 24/24 断言）；setup **32,544,503 B** `268edbf0…7af34`；portable **40,236,767 B** `0ab12df6…ea7`。上一版归档 `dist/_prev/1.0.5-fix17b/` | `sha256sum` |
+| 安装实测 | `/VERYSILENT /SUPPRESSMSGBOXES /NORESTART` **EXITCODE 0**；`dist/windows/Shunbo-1.0.5` ↔ `D:/Programs/Shunbo` **38/38 逐字节一致**；索引 7 分片 6,634,112 B；`app.so` 检出 `bucketKeyOf` / `_poolMatchesCurrentSource` / `_editingText` 与中文串「检索条件已从片源索引目录载入」；GUI PID 24532 / 52 线程 / 1056.5 MB | 安装日志 + 哈希比对 + `Get-Process` |
+| 未验证 | ①真机「电影 → 电视剧 → 电影」来回切的命中率与 `ImageCache` 淘汰后重解码；②直播页数字键在 `enabled: widget.active` 改动后未真机复验；③「点一下输入框但焦点还没落进去就按数字」的竞态未覆盖 | — |
+| 纪律 | 未提交、未推送；`legacy/` 零改动；不改播放参数；版本 `1.0.5+6` | `git status` |
+
+### 五十四、全目录检索与筛选 + 条件维度补全 + 海报两处根因 + 点播起播慢（1.0.5 同版重打，2026-11-12 22:0x）
+
+| 项 | 结论 | 证据 |
+|---|---|---|
+| 需求 | ①卡片海报仍不显示；②检索要在**当前栏目的整份目录**里查；③按红标去掉刷新提示语；④可筛选条件太少（参考同类站截图）；⑤点播播放时加载慢、卡顿，排查原因 | 用户第十九次修需求（截图红标 + 追加一条） |
+| **检索口径** | 原来 `search` 只 `limit` 截断返回 `List`，页面 `_indexHitsTotal` 取的是**已加载那一池**的长度。现在 `BuiltinIndexScanner.scan` 返回 `BuiltinScanResult`，`searchDetailed` / `filterSection` 返回 `(hits, total)`，一次扫完整片只为拿真实总数；检索同时匹配**片名 / 年份 / 地区 / 类目名** | README §66.1 |
+| 筛选口径 | 页面新增 `_facetHits` / `_facetHitsKey` / `_facetHitsTotal` / `_facetScanSeq`，build 里 microtask 触发 `_runFacetScan`，`_mergeFacetHits` 合并后**整体重排**；`_indexHitLimit` 200 → 400 | `verify_vod_posters_facets.dart` D34/D35 |
+| 去提示语 | `_gateRow()` ready 且非 busy → `SizedBox.shrink()`；`_facetStatus` 只在 `_facetResetNotice` 非空时显示；`_refreshAction` **成功不播报**、失败才留一行；删 `_missingFacetNote` | 同上 D32/D33 |
+| **条件太少根因** | `facetOptionsFromShard` 把类目名过 `vodTypeWordsFromLabel` → `isNonGenreLabel`，把「国产剧 / 欧美剧 / 香港剧 / 日本剧」判成非体裁词剔掉：电视剧 22 → 10 | README §66.3 |
+| 条件现状 | 按**原始类目名**统计：电影 23 / 电视剧 22 / 短视频 28 / 动漫 16 / 其他 33 / 纪录片 2；地区 20 项；时间 4 档 | 同上 D37 |
+| **索引升 v2** | 地区与年份索引里本来没有 ⇒ 改抓 `?ac=detail`（带 `vod_area` / `vod_year`）：30,178 页 / 1,458,263 条 / 4,974 s；164 页三次重试后仍 502 但不阻塞。7 段列式 + 20 项地区词表（Python `AREA_ALIASES` ↔ Dart `_kAreaAliases` 逐字镜像，门禁 F09）；v1 五段仍可解析 | `verify_vod_builtin_index.dart` A22/A23/B10/B11/E09/E10/F09/F10 |
+| 索引现状 | **7.23 MB / 602,413 条 / 6 片**（原 6.31 MB）。年份/地区覆盖：movies 99.4/99.6、series 98.1/99.7、documentaries 99.5/99.0、shortVideo 92.4/75.4、anime 99.5/86.9、other 57.4/33.9 | manifest `withYear` / `withArea` |
+| **海报根因一（应用层，已修）** | 批量取海报 10 连 + 8 s 超时，超时与「确实没图」共用空结果 ⇒ `bucket.dead.add` **永久判死**。实测同一 10 连请求 2.3 s 与 24.4 s 都出现过 ⇒ 一次超时那批卡此后永不出图 | README §66.4 |
+| **海报根因二（网络层，修不了）** | 图床直连实测 12 站样本：`xl.xltupian.com` SocketException、`ok.zuidapic.com` / `pic.youkupic.com` HandshakeException、`p.bfvp26.com` 时通时断（占电影栏目 25.8%）、`mtzy2.com` 单张 271 KB / 6.6 s | Dart `HttpClient` + `findProxy DIRECT` 实测 |
+| 海报修法 | 10 连 → **4 连**（单批 ~170 KB → ~11 KB）、超时 8 → **12 s**、站内与站间**双并发**；`VodPosterFetch` 回包改 `VodPosterBatch{urls, failed}`，网络失败隔 1.2 s 重排一次（`kMaxRetry=1`），只有「解析成功但确实没图」才 dead；加载中加细转圈 `_loadingFallback`；图片层 `_dead` 改 `Map<url,时刻>` + 60 s TTL | 同上 D38/D39/D40、C11a/C11b |
+| 4 连 vs 10 连实测 | dyttzy 3.96/1.90/2.91 s（32,931 B）→ 0.97/0.81/1.00 s（11,701 B）；bfzy 3.44/1.21/2.16 s（30,371 B）→ 1.29/3.46/1.26 s（10,820 B） | curl 各 3 次 |
+| **播放慢定性** | 详情回源 bfzy 2.4–2.6 s / dyttzy 0.7 s（响应仅 3 KB）；m3u8 ttfb 1.2–2.6 s / 35 KB / 7000+ 分片（中文路径）；单 `.ts` 404–529 KB / 4.9–14.3 s；3 片并发吞吐 **≈50–100 KB/s**，8 s 目标时长需 ~55 KB/s ⇒ **源站带宽 + 中文路径重定向，不是客户端缓冲**。项目无 `LoadControl` 类可调项 ⇒ **本轮不动任何播放参数** | README §66.5 |
+| 点开卡片不再干等 | `_openDetail` 原阻塞（`await resolve` 期间只 `_busy=true`）。改乐观进详情页：`_resolving` / `_resolveError` / `_resolveSeq` 代次隔离 + `_resolveNotice` 常驻条（转圈 / 原因 + 重试，不退回列表）+ `_resumeOrPlay` 空剧集守卫 | 同上 H27/H28/H29 |
+| 门禁 | `flutter analyze` 0 issue；**44 步 / 4444 断言**（上轮 44/4436，+8）。`vod-posters-facets` 102 → **107**（C11 拆 C11/C11a/C11b + D38–D40）、`vod-index-gate` 132 → **135**（H27–H29） | `verify_all.dart` 160.0 s |
+| 产物（三件） | APK **52,427,946 B** `95cb13d8…609c15c`（full 47,965,401 / lite 28,844,969，单包 24/24 断言）；setup **33,513,307 B** `821dcd4d…7dcd7f2`；portable **41,207,947 B / 38 文件** `eee2a910…7885f5c`。上一版归档 `dist/_prev/1.0.5-full.20261112-220051.390f1fe6.apk.bak` | `sha256sum` |
+| 安装实测 | `/VERYSILENT /SUPPRESSMSGBOXES /NORESTART` **EXITCODE 0**（安装前有 5 个活着的 `shunbo.exe`，被 `CloseApplications` + `PrepareToInstall` 的 taskkill 兜住）；`dist/windows/Shunbo-1.0.5` ↔ `D:/Programs/Shunbo` **38/38 逐字节一致**；`data/app.so` 8,553,352 B；索引目录 **7,601,062 B**；`app.so` 检出 `VodPosterBatch` / `_loadingFallback` / `_resolveNotice`（UTF-8）与「正在获取播放地址」「暂时取不到播放地址」「全目录命中」「正在按整份栏目目录筛选」（UTF-16LE） | 安装日志 + 哈希比对 + AOT 串取证 |
+| 未验证 | ①真机 120 卡实际出图率与弱网重试收益（本机无 adb，只到桌面与 `dart run` 层）；②三家 TLS 被中断的图床无替代源；③播放卡顿只定性到「源站吞吐不足」，没做换源 A/B（要多源改 `parseVodPlayUrl` 策略，属播放链路，需单独开一轮）；④`_facetHits` 整片扫描耗时未上真机（桌面几十毫秒级） | — |
+| 纪律 | 未提交、未推送；`legacy/` 零改动；不改播放参数；版本 `1.0.5+6` | `git status` |
+
+### 五十五、播放页单出口 + 切栏目清搜索 + 去除常驻刷新 + 类型/分类拆分 + 爱奇艺式海报网格（1.0.5 同版重打，2026-11-13 09:3x）
+
+| 项 | 结论 | 证据 |
+|---|---|---|
+| 需求 | 五张截图：①播放页去「返回」「选集」，改「关闭」（关播放 + 回上一页）；②切栏目时搜索框清空恢复初始；③「去除」标注的刷新按钮；④「类型不对」；⑤每行卡片间距太宽，参考爱奇艺调整 | 用户第二十次修红标 |
+| **播放页按钮** | `_topBar` 删左上 `IconButton(tooltip:'返回（Esc / 返回键）')` 与右上「选集」，改唯一「关闭」→ `_closePlayback()` = 全屏先退 + `_leavePlaying()`（停播、收选集浮层、回详情 / 无条目时回列表）。Esc / 物理返回键仍走 `_back()` 分层返回；控制条「选集（M）」保留 | README §67.1；`verify_vod_playback.dart` E02 改口径、`D41/D42` 反向锁死 |
+| **切栏目清搜索** | 六页在 `IndexedStack` 保活、各自持 controller ⇒ `didUpdateWidget` 里 `widget.active` 翻转调 `_resetSearchOnSectionSwitch()`：清 `_search.text` / `_query`、`_indexSeq++`、`_indexTimer?.cancel()`、清 `_indexHits/_indexHitsQuery/_indexHitsTotal/_filterQuery`。**不 setState**（父级 build 期间会炸）；筛选项保留 | §67.2；`D43/D44` |
+| **去除刷新** | 常驻「⟳ 刷新」按钮整个去掉，一级条只剩「全部 + 共 N 条」。手动重读能力移到 `_facetStatus` 非就绪态「重试」→ 完整 `_manualRefresh()`（条件+条数+列表+海报），禁点与「处理中」保留；失败文案改「重试失败：…（列表保持原样，可再试）」，成功静默 | §67.3；`D24/D26/D33/D45` 反向锁死 |
+| **「类型不对」根因** | 十九次修为凑条件数，把 `facetOptionsFromShard` 从 `vodTypeWordsFromLabel`（剔地区型类目）改回**原始类目名原样统计** ⇒ 电视剧类型行变成一排「国产剧 / 欧美剧 / 香港剧 / 日剧 / 韩剧 / 港剧 / 台剧」，是地区/来源不是体裁，且与「地区」行重复 | README §67.4；`D37` 口径反转 |
+| **拆成两个维度** | 「类型」= `vodTypeWordsFromLabel()` 体裁词；「分类」= 站点原始类目名。`VodFacets.categories` / `VodFilter.category` 参与 `isActive`/`activeCount`/`==`/`hashCode`/`copyWith`；「全部」清空、`_facetKey()`、`filterSection` 缓存键、`_onFacetDirectoryChanged` 过期值清理全部贯通；`applyVodFilter` 按 `typeName` 精确比、`filterSection` 按 `label == category`，类型匹配改走体裁词 | §67.4；`D46/D47/D51`、`F25/F28` |
+| 补单字地区简称 | `_kAreaCores` 增 `日/韩/港/台/泰/马泰/港澳`。第一轮改完类型行还留着「日剧 / 韩剧 / 港剧 / 台剧 / 马泰剧」（采集站把「日本剧」简写成「日剧」，剥「剧」只剩单字） | `F29`；真实目录复查 |
+| 真实目录实测（v2） | 类型/分类：电影 22/23、**电视剧 3/22**、纪录片 2/2、短视频 27/28、动漫 8/16、其他 28/33；地区 19–20、时间 14–16。电视剧类型只剩 `反转爽剧 / 连续剧 / Netflix自制剧`——数据事实（站点只按地区分类），分类行完整保留 22 项，条件总量 22 → 25 没变少 | `dart run build/shot20/probe.dart`；`A09c/A09c3/A09f` 真实分片断言 |
+| **海报间距根因** | 不是 `crossAxisSpacing`：`mainAxisExtent` 钉死 186 + `Column(crossAxisAlignment:start)` 给宽松宽约束 ⇒ `Image.network` 只按「固定高 × 图片比例」取宽（约 90 px），槽位约 325 px，左右各空一大块 | §67.5；`D48/D49` |
+| 网格改法 | `_VodCard` 改 `stretch` 让海报吃满槽位；`posterHeight=(cardWidth-8)*1.5`、`mainAxisExtent=posterHeight+47`（2:3 不裁切）；列数 5/4/3/2 → 6/5/4/3；spacing 14 → 10、padding 6 → 4、海报与片名 8 → 6。1920 窗口示例：海报 90×135 → 264×396，横向空白 ~235 px → 10 px，一屏 4–5 行 → 2–3 行 | §67.5 |
+| 门禁 | `flutter analyze` 0 issue；**44 步 / 4460 断言**（上轮 44/4444，+16）。`vod-posters-facets` 107 → **121**（A07/A07b 改口径、A07f/A09c3/A09f 真实分片、D24/D26/D33/D37 反向锁死、D41–D51 五条红标逐条钉死）；`vod-playback` 193 → **195**（E02、F25 改口径 + F28/F29） | `verify_all.dart` 112.0 s |
+| 产物（三件） | APK **52,444,330 B** `8e905bbb…cf8ad86`（full 47,981,683 / lite 28,861,258；单包 24/24 断言）；setup **33,516,243 B** `7e8b262e…c2fc6dfa`；portable **41,210,859 B / 38 文件** `a0d549aa…46ea894a` | `sha256sum` |
+| 安装实测 | `/VERYSILENT /SUPPRESSMSGBOXES /NORESTART` **EXITCODE 0**（安装前有 10 个活着的 `shunbo.exe`，被 `CloseApplications` + `PrepareToInstall` taskkill 兜住）；`dist/windows/Shunbo-1.0.5` ↔ `D:/Programs/Shunbo` **38/38 逐字节一致**；`data/app.so` 8,553,352 B（9:36:40）；索引目录 7,601,062 B；iss UTF-8 BOM + CRLF / 119 行 | 安装日志 + 哈希比对 |
+| AOT 串取证 | 检出 `_closePlayback`(1) / `_resetSearchOnSectionSwitch`(1) / `VodPosterBatch`(1)，`_refreshAction` **0**（已删）；UTF-16LE：「关闭」12 / 「重试失败」2 / 「分类」7 / 「正在获取播放地址」1 / 「全目录命中」1 | `app.so` 字节扫描 |
+| GUI 启动 | PID 4756 / 93 线程 / 775.6 MB / 窗口「顺播 shunbo」，验完已结束（mpv 打印两行 `Can't find filter element` 属常规噪声） | 进程检查 |
+| 未验证 | ①图 3 按「去掉整个刷新按钮」处理，若本意只是去「刷新」两字、保留图标，一句话可改回；②大卡片一屏 2–3 行的遥控器手感与真机 120 卡帧率；③「类型/分类」在生成目录（`vod-index.json`）下只到 `dart run` 层；④全屏 + 选集浮层叠加时点「关闭」未上真机 | README §67.7 |
+| 纪律 | 未提交、未推送；`legacy/` 零改动；不改播放参数；版本仍 `1.0.5+6` | `git status` |
+
+### 五十六、设置-点播源收敛为单输入框 + 索引按地址独立存放 + 24 小时增量更新（1.0.5 同版重打，2026-11-13 10:5x）
+
+| 项 | 结论 | 证据 |
+|---|---|---|
+| 需求 | 一张「设置-点播源」截图 + 四条：①只留一个第三方片源接口地址输入框，输完自动获取索引，按现有默认索引的存储方式落盘；保留原判断逻辑（与默认地址一致则复用、不重复获取）；新接口索引**独立存放**，不得覆盖默认索引；②排查是否已有自动获取最新片源，无则加定时自动更新，周期按主流播放软件惯例明确设定，**追加合并、不全量重取、处理重复**；③新增手动获取片源入口，同样追加写入；④改动限本模块、兼容既有逻辑、界面简洁 | 用户第二十一次修红标 |
+| **排查结论** | 改前**没有**任何与片源目录相关的定时器（全仓 `Timer.periodic` 只服务浮层/控制条）。近似的两个都是**一次性**：`VodAutoSource.ensureLoaded()` 只回答「首次进栏目填片库」（`_pending` 固化、失败不重试）；`VodBootController` 只在冷启动跑一遍。结论：需新增真正的运行期周期任务 | README §68.1；`grep -n "Timer.periodic" lib/` |
+| **界面收敛** | 整文件重写 `vod_source_section.dart`：只剩 **1 个** `TextField`（标签「第三方片源接口地址」，默认不回填）＋一行状态（当前生效 / 实时校验 / 提交结果）＋1 个「立即获取最新片源」按钮＋一行说明。删掉三个 `SwitchListTile`、`kVodSourceCandidates` 七条候选列表、`_pickCandidate` / `_runImport`、「添加并使用 / 应用当前地址 / 恢复默认」三按钮 | §68.2；门禁 H30–H32 反向锁死（`RegExp(r'TextField\(')` 计数 == 1、`!contains('kVodSourceCandidates')`） |
+| **自动获取** | `onSubmitted` + `FocusNode` 失焦 → `_submitAddress()`；`if (raw == _lastSubmitted) return;` 同址不重复提交，失败 `_lastSubmitted = ''` 允许重试；明文 http 走 `_confirmInsecure`（「放行并获取」）；`isKnownUnusableSource` 提前拦；`disclaimerAccepted` 检查保留。成功后**不回填输入框**，状态行如实显示「当前生效：<地址>」 | §68.3；H33/H34 |
+| **判断逻辑零改动** | `decideVodIndexSubmit` 三判据原样：地址 == 默认地址 → `loadExisting`（零网络，随包只读）；已有该地址独立文件 → `loadExisting`；其余 → `rebuild`（取片源 → 写独立文件 → 重跑校验） | §68.3；H35–H37 |
+| **独立存放** | `vodIndexFileForUrl(url)` → `vod-index-<FNV1a32(url) 8 位 hex>.json`；**默认地址永不派生文件名**（`fileFor()` 返 null、`saveFor()` 抛错、`appendFor()` 返 skipped）。`rebuild` 开头再加 `isIndependentSource(url)` 双保险；成功走 `saveFor(url, …)`，不再写固定 `vod-index.json`。旧 `vod-index.json` 降级为只读，仅当 `sourceUrl` 逐字匹配才读到 | §68.4；H38/H39/H42 |
+| **追加合并去重** | `mergeVodIndexItems(existing, incoming)` 按 `VodItem.id` 去重：旧条目前、新条目后，返回 `added/duplicates/total`。`appendFor()` 用 `.tmp` + `rename` 原子写盘，受 `kMaxVodLibraryBytes`（72 MB）护栏 | §68.5；H40/H41 |
+| **不全量重取** | `fetchLatestVodIndexItems()` 轮转 `pager.next()`，只覆盖各采集站**第 1 页**（CMS `?ac=detail&pg=1` 按 `vod_time` 倒序），批次上限 20 / 预算 90 s / 站点上限 100；**绝不翻第 2 页**，不碰 `VodLibrary` / `VodSession` | §68.5 |
+| **24 小时定时** | `kVodIndexUpdateInterval = Duration(hours: 24)`；`VodIndexAutoUpdater` 首帧后 `start()` 补一次 + `Timer.periodic`；上次成功时间落 `config.json` 的 `vod-index-last-update`；`shouldUpdate(last, now)` 判过期 | §68.6；H36（周期常量）、H37（让位） |
+| **让位与单飞** | `await vodBoot.settled` → `await vodIndexGate.settled`，未 settled 直接跳过（1 万条 vs 147 万永远追不完）；`_running` 单飞防重入；失败**不写**时间戳，下一轮重试；只写盘不调 `gate.check()`，新片源下次进入点播生效 | §68.6 |
+| **手动入口** | 「立即获取最新片源」→ `runOnce(force: true)`，跳过周期判断但仍走让位、单飞、追加去重、独立文件；按钮在运行中禁用并显示进度 | §68.6；H32 |
+| **点播页读取统一** | 新增 `_generatedIndexDoc()`（按 `vodIndexGate.lastUrl` 走 `loadFor`），替换 `vod_page.dart` **5 处**直读固定 `vod-index.json` 的写法。否则新地址永远读不到自己的目录（回源、检索、栏目、条件全空） | §68.4；H06 |
+| 门禁 | `flutter analyze` **0 issue**；**44 步 / 4513 断言**（上轮 44/4460，+53）。`vod-index-gate` → **182**（H18 改 `saveFor`、H06 改 `_generatedIndexDoc`、新增 H30–H42 与 `testSourceModule()` 34 条：纯函数 + 临时目录 IO + 调度器回归）；`vod-source-address` **128**（G04–G06c 按新 UI 口径改写 + G15–G20 六条）；`third-party-vod` **152**（F10–F13d / G15 / G16 改口径 + 默认地址双保险）；`vod-playback` **195**（C15/C16 改「设置页不再暴露外部代码开关，但 `allowExternalCode: s.allowExternalCode` 仍透传」） | `verify_all.dart` 121.1 s |
+| 产物（三件） | APK **52,444,330 B** `900cc76b…74150f6`（full 47,981,692 / lite 28,861,258；单包 24/24 断言，minSdk 16 / v1+v2 双签 / 清单 1046 台 2135 线路字节一致）；setup **33,514,352 B** `2b01d8eb…cd16b315`；portable **41,359,583 B / 38 文件** `ac80642e…a7ed3078`。上一版归档 `dist/_prev/fix20/` | `sha256sum`；`build/single_fix21.log` |
+| 安装实测 | `/VERYSILENT /SUPPRESSMSGBOXES /NORESTART` **EXITCODE 0**（安装前 10 个 shunbo.exe 句柄，被 `CloseApplications` + `PrepareToInstall` taskkill 兜住，未卡 `d3dcompiler_47.dll`）；`dist/windows/Shunbo-1.0.5` ↔ `D:/Programs/Shunbo` **38/38 逐字节一致**；`data/app.so` 8,553,352 B（10:53）；索引资产 7 文件 / 7,601,062 B 未变（本轮未重打索引）；iss UTF-8 BOM + CRLF / 119 行 | 安装日志 + 哈希比对 |
+| AOT 串取证 | 检出 `_generatedIndexDoc`(1) / `mergeVodIndexItems`(1) / `VodIndexAutoUpdater`(1) / `vodIndexFileForUrl`(1) / `appendFor`(1) / `isIndependentSource`(1) / `shouldUpdate`(5) / `vod-index-last-update`(1) / `_submitAddress`(1)；已删的 `_pickCandidate` / `kVodSourceCandidates` / `_refreshAction` **全 0**；UTF-16LE：「立即获取最新片源」1 /「第三方片源接口地址」1 /「正在获取最新片源」1 /「已追加」1 /「24 小时」2 /「当前生效」1 | `app.so` 字节扫描 |
+| GUI 启动 | PID 17796 / 49 线程 / 窗口「顺播 shunbo」，验完已结束（mpv 两行 `Can't find filter element` 属常规噪声）。残留 9 个 0 线程 0 MB 的 shunbo 句柄是历史僵尸对象，非活实例 | 进程检查 |
+| 未验证 | ①定时器跨进程重启后的「首帧补一次」仅在桌面与模拟器路径验证，真机长期挂机未测；②增量取数依赖各采集站 `pg=1` 按 `vod_time` 倒序，若站点忽略排序参数会取到旧片（去重后不增长，不会脏写）；③多地址并存时每个地址一份独立文件，磁盘占用随地址数线性增长，只受 `kMaxVodLibraryBytes` 单文件护栏约束，**未做总容量上限** | README §68.8 |
+| 纪律 | 未提交、未推送；`legacy/` 零改动；不改播放参数；版本仍 `1.0.5+6` | `git status` |
+
+### 五十七、点卡片直接播 + 播放页右栏详情 + 8 秒自动收缩（1.0.5 同版重打，2026-11-13 11:1x）
+
+| 项 | 结论 | 证据 |
+|---|---|---|
+| 需求 | 一张详情页截图 + 三条：①选中片源后**跳过中间详情页**，直接进播放页开始播；②播放页**右栏**加载并展示影片详细介绍；③右栏无操作达到设定超时后**自动收缩**，交互时重新展开或刷新计时。并要求明确说明触发条件、内容来源与展示形式、超时时长与收缩后交互 | 用户第二十二次修红标 |
+| **触发条件** | **只有一条**：用户点击 / 遥控器确认列表里的某张卡片（`_VodCard.onTap` → `_openAndPlay`）。换集（选集 / M 键 / 上一集下一集）只在播放页内部换源，不重新进页；`_busy \|\| _resolving` 为真直接 return，连点不起两次播 | README §69.1；`T11` |
+| **视图收敛** | `_VodView` 三态 → **browse / playing** 两态；`_buildDetail()`、`_resolveNotice`、`_retryResolve`、详情页选集 `_EpisodeChip` 全部删除（最后一个按 analyze `unused_element` 删） | `T11`；analyze 0 issue |
+| **两条起播路径** | 内置索引命中 → 立刻切播放视图 + 遮罩「正在载入…」，后台 `vodBuiltin.resolve()` → 取续播 → `_play()`；已有完整条目 → 取续播 → 直接 `_play()`。续播规则原样（有记录续、看完进下一集、无记录从头） | `H27`；`_openAndPlay` |
+| **失败不退回** | 回源失败留在播放页，右栏给原因 + 「重试」（`_retryOpen`）；空剧集给「这个片源没有可播放的剧集」；`_play` 失败从 SnackBar 改到右栏（不重复说两遍） | `H28`/`H29`；`_playResolved` |
+| **右栏内容与来源** | 全部来自内存里的 `VodItem`，**不新增任何网络请求**：海报 16:9（既有 `_Poster`，异步补图 / 失败色块）、标题、`item.subtitle`（「暴风资源 · 恐怖片」）、状态行（取地址中 / 失败+重试 / 上次看到第 N 集 mm:ss）、`item.description` 简介、`item.license` 授权说明 | README §69.2；`T12` |
+| **展示形式** | 右侧浮层，宽度 = 视口 32% 夹在 **340–440 px**，黑底 84% + 左侧 1 px 分隔线，内容可滚动（底部留 120 px 给控制条）。**覆盖画面不缩 `PlayerStage`**（改渲染几何会触发解码器/渲染面重建，容易黑屏一帧）；z 序排在**控制层下面**，顶栏「关闭」与进度条压在它上面 | `T03`/`T13`；`AnimatedPositioned` 180 ms |
+| **超时时长** | **8 秒**（`kVodDetailIdleTimeout`）。不是抄控制条的 4 秒：4 秒是「按完让出画面」，详情是**读**——标题+类型+两行简介；主流信息层（Netflix / Plex / 爱奇艺桌面端）都在 5–10 秒，取中间偏长 | README §69.3；`T01`/`T02` |
+| **交互重置** | 进播放页即展开并起第一段计时；指针进面板 / 面板内滚动 / 点面板 → 保持展开并重置 8 秒；点画面切控制条、音量键、快进快退、换集 → 若右栏开着同样重置（`_pokeControls` 联动）；**I / D / 信息键** toggle（遥控器没鼠标，不给键位就再也拉不回来） | `T05`–`T10`/`T15` |
+| **收缩后行为** | 右侧留 **44 px 窄条**（`info_outline` + 竖排「详情」），不是整个消失；点窄条 / 指针移上去 / 按 I·D 都重新展开。**唯一不改状态的输入**是点画面别处（只刷新计时，不把刚收起的又弹出来） | `T04`/`T14`；`VodDetailInput.pointerElsewhere` |
+| **不收缩的时刻** | `_resolving`（正在取地址）与 `_resolveError != null`（取不到）时**不启动计时**并强制展开 —— 那是必须看见的状态，缩起来等于把「为什么没画面」藏了 | `T17`；`_restartDetailTimer` |
+| **状态机纯函数** | `vodDetailExpandedAfter(expanded, input)` + `VodDetailInput` 七种输入 + `vodDetailWidth()`，`dart run` 可穷举 | `vod_playback_controls.dart` |
+| 顺带修 | `_back()` 分层返回三层 → 两层（选集浮层 → 全屏 → 回列表）；`_leavePlaying()` 回 `browse`、`_item=null`、`_resolveSeq++` 作废在途回源（不作废会「退回列表后莫名开始放片」） | README §69.4 |
+| 门禁 | `flutter analyze` **0 issue**；**44 步 / 4530 断言**（上轮 4513，+17）。`vod-playback` 195 → **212**（新增 `testDetailPanel()` 17 条：8 秒与 4 秒独立 / 宽度三档 + NaN 兜底 / 窄条 44 / 状态机穷举 / 内容五要素 / z 序 / 键位 / 计时器取消 / 取地址中不收缩；E10、I04 改口径）；`vod-index-gate` **182**（H27–H29 改口径：直连 `playing`、`_VodView.detail` 与 `_buildDetail()` 全文件不存在、`_retryOpen` 取代 `_retryResolve`）；`vod-posters-facets` **121**（D42 改「关闭回列表」）。第一轮全量曾 FAIL 1 步（D42 仍要求回详情），改口径后全绿 | `verify_all.dart` |
+| 产物（三件） | APK **52,460,714 B** `61cfaee5…0ed95`（full 47,997,737 / lite 28,877,312；单包 24/24 断言）；setup **33,515,646 B** `90f6804e…dd46b`；portable **41,366,217 B / 38 文件** `c516c944…8650f`。上一版归档 `dist/_prev/fix21/` | `sha256sum` |
+| 安装实测 | `/VERYSILENT /SUPPRESSMSGBOXES /NORESTART` **EXITCODE 0**（安装前有活着的 shunbo.exe，被 `CloseApplications` + `PrepareToInstall` taskkill 兜住）；`dist/windows/Shunbo-1.0.5` ↔ `D:/Programs/Shunbo` **38/38 逐字节一致**；`data/app.so` 8,553,352 B（11:26）；索引资产 7 文件 / 7,601,062 B 未变 | 安装日志 + 哈希比对 |
+| AOT 串取证 | 检出 `_openAndPlay`(1) / `_playResolved`(1) / `_detailPanel`(1) / `_detailRail`(1) / `_detailBody`(1) / `_detailStatus`(1) / `_toggleDetail`(1) / `_pokeDetail`(1) / `vodDetailWidth`(1) / `VodDetailInput`(2)；已删的 `_openDetail` / `_buildDetail` / `_retryResolve` / `_EpisodeChip` **全 0**；UTF-16LE：「详情」2 /「收起详情」1 /「正在获取播放地址…」1 /「上次看到」1 /「播放失败：」1 /「这个片源没有可播放的剧集」1。单包两个 ABI 的 `libapp.so` 同样 `_openAndPlay`=1 / `_detailPanel`=1 / `_buildDetail`=0 | `app.so` 字节扫描 |
+| GUI 启动 | PID 3536 / 48 线程 / 1033.7 MB / 窗口「顺播 shunbo」，验完已结束（mpv 两行 `Can't find filter element` 属常规噪声） | 进程检查 |
+| 未验证 | 右栏滑入在 120 卡网格 + 4K 窗口的帧率未测；遥控器「信息键」`debugName` 各家盒子不同（`Info`/`Guide`/`KeyI` 都收，真机未逐台验证）；8 秒是否舒服只在桌面鼠标下试过；右栏覆盖区在 1:2.35 超宽片源下会不会压字幕未实测 | README §69.6 |
+| 纪律 | 未提交、未推送；`legacy/` 零改动；不改播放参数；版本仍 `1.0.5+6` | `git status` |
+
+### 五十八、设置页去说明行 + 默认接口也能追加获取 + 筛选去「分类」·类型照爱奇艺 + 右栏悬停伸缩（1.0.5 同版重打，2026-11-13 11:4x）
+
+| 项 | 结论 | 证据 |
+|---|---|---|
+| 需求 | 三张截图、四条红标：①「设置-点播源」输入框下那行说明（默认留空…）**去除**；②点「立即获取最新片源」时**必须真的按追加方式去取一遍**，不能因为默认接口是只读就跳过；③点播筛选条件把「分类」整行**去除**，且「类型」不对 —— 照爱奇艺的「类型」行；④播放页右栏的交互（鼠标移入移出时怎么伸缩）与半透明程度**参考左栏**，并**去掉右上角的收缩按钮** | 用户第二十三次修红标 |
+| **① 说明行** | `TextField.decoration.helperText` 整行删除（下一行状态行本来就写着「当前生效：…」）。输入框仍不预填地址（`_input.clear()` + G11–G13 不动） | README §70.1；`G14`/`H43` 反向锁死 |
+| **② 根因** | `VodIndexAutoUpdater.runOnce()` 里有一句 `if (isDefaultSource(url)) return skipped('默认片源索引随包只读，无需更新')` —— 默认接口下**一次网络都不发**，把「没实现」说成了「不需要」 | §70.2 |
+| **② 现在的分工** | 默认接口：随包索引一个字节不动，新片源写 `vod-index-<hash>.json`（`appendFor` → `supplementFileFor`），由 `loadSupplementFor()` 读；自填接口：同一文件名即它的整份目录（可重写可追加），由 `loadFor()` 读 | `I19`/`I19b`/`I19c` |
+| **② 红线未破** | `fileFor(default)` 仍 null、`saveFor(default)` 仍抛错（不许整份重写）；`loadFor(default)` 仍 null ⇒ 闸门读不到增补文件，`decideVodIndexSubmit` 三判据一字未改 | `I12`/`I19`/`H32`/`H38` |
+| **② 点播页合并五处** | 浏览首屏（`_indexPage == 0` 排在整批目录最前 + 按片名去重 + `adoptMany` 否则点不开）／关键词检索（`filterVodItems(extra, q)` 追加、总数相加）／目录级筛选（`applyVodFilter(extra, f)` 追加）／筛选条件（`mergeVodFacets` 类型计数相加、地区去重、时间重排）／「共 N 条」= 分片 records + 增补条数 | `H44`；`_supplementItems`/`_withSupplement` |
+| **② 调度层简化** | `isDefaultSource` 注入点整个删除 —— 调度器不必知道谁是默认地址，地址分流下沉到存储层（`appendFor` 内部判断） | `I31` 改「默认接口也照走同一条链路」 |
+| **③ 删分类** | `VodFacets.categories`、`VodFilter.category`、`_filter.category`、`filterSection(category:)`、`facetOptionsFrom*` 里的 `categoryCounts`、UI 的「分类」行 **全部删除** | `D37`/`D46`/`D47`/`F25`/`F28`/`G14` |
+| **③ 类型词表** | 新增 `kVodGenreVocabulary`（33 词，顺序即界面顺序，照爱奇艺：喜剧 动画 动作 爱情 恐怖 战争 惊悚 枪战 科幻 犯罪 悬疑 奇幻 剧情 青春 冒险 家庭 少儿 警匪 历史 武侠 伦理 灾难 传记 运动 音乐 魔幻 歌舞 戏曲 玄幻 悲剧 史诗 西部 其他） | `D52`；`A02b` |
+| **③ 归一是关键** | `vodGenreKeyOf()` 剥体裁后缀（`_kFormSuffixes`，长的先剥）再查词表，查不到返回 `''`：`剧情片`→`剧情`、`动作片`→`动作`，而 `4K电影`→`4K`、`Netflix电影`→`Netflix`、`邵氏电影`→`邵氏`、`欧美剧`→`欧美` 都不进类型行 | `A07b`/`A09c`；`D52` |
+| **③ 顺序不按命中数** | `VodFacets` 内部改存 `typeCounts`（词→计数），`types` 是从词表筛「有片」的 getter；类型行不再因某个词片多而跳位 | `A01b`；`D46` |
+| **③ 筛选口径同源** | `applyVodFilter` 走 `vodGenreKeysOfItem(it)`（`genre` 优先、缺失回落 `typeName`、再归一）；`filterSection` 走 `vodGenreKeysOf(label)` —— 两条路径同一判据，「点下去一定筛得到」 | `D51` |
+| **③ 有意代价** | 电视剧类目名（国产剧/日剧/香港剧）归不进词表 ⇒ **类型行会是空的**，只剩地区/时间/排序。比列一排「XX剧」诚实，也与用户参考图一致 | `A09f`；§70.3 |
+| **④ 悬停伸缩** | `onHover` → `onEnter` + `onExit`：进栏即展开并取消计时；离栏 1.2 s 收缩（`kVodDetailHoverExitDelay`，与左栏 `_scheduleSideHide` 同一档）。8 秒（`kVodDetailIdleTimeout`）降级为**兜底**（进页一次 + 遥控器/触屏） | `T18`/`T19`/`T20` |
+| **④ 悬停时不排计时** | `MouseTracker` 会同时点亮外层 `onHover`（`_pokeControls`），那条路径改走 `_touchDetailPanel()`：`_detailHovering` 为真就不排计时，否则会出现「悬停中 8 秒到点缩回」 | `T20`；§70.4 |
+| **④ 半透明对齐左栏** | 展开态与窄条底色都改 `AppTheme.panelScrim`（surface @0.78，左右两侧栏唯一出口），删掉自调的 `black 0.84` / `black 0.55` | `T21` |
+| **④ 去收缩按钮** | 右上角 `IconButton(chevron_right_rounded, tooltip: '收起详情…')` 删除；收缩出口改为「移出 1.2 s / 8 s 兜底 / I·D·信息键」三条 | `T22` |
+| 门禁 | `flutter analyze` **0 issue**；**44 步 / 4542 断言**（上轮 4530，+12）。`vod-index-gate` 182 → **186**（I19 改口径 + 新增 I19b/I19c + I31/I32/I33 计数 + H42 文案 + H43 + H44）；`vod-playback` 212 → **217**（新增 T18–T22，F03f/F25/F28/F29 改写）；`vod-posters-facets` 121 → **124**（A01/A01b/A02/A02b/A07/A07b/A07f/A09b/A09c/A09c3/A09f 改写 + D37/D46/D47/D50 改写 + 新增 D52/D53）；`third-party-vod` **152**（G14 反向改写）。第一轮全量曾 FAIL 1 步（G14 仍要求「默认留空」），改口径后全绿；增补并发的 `Future` 修复后又完整复跑一次，仍 **44 步 / 4542 断言全通过**（EXIT=0、无 FAIL、111.6 s） | `verify_all.dart` 110.4 s |
+| 产物（三件，**重打**） | 首轮产物打完后自查发现增补目录读取的并发缺陷（`bool _supplementLoaded` 会让同帧第二次调用拿到空列表并永久缓存 ⇒ 条件行与「共 N 条」恒为 0），改成 `Future` 缓存后 **`flutter analyze` 0 issue + 全量门禁 44 步 / 4542 断言全绿**，三件产物与安装、取证全部重做。APK **52,460,714 B**（full 47,997,736 / lite 28,877,310，单包 24/24）`1b256810…e30de7a`；setup **33,518,640 B** `8550423d…24c1abc`；portable **41,214,158 B / 38 文件** `ef5cf62d…419a8213`。修复前那一版归档 `dist/_prev/fix23a/` | `dist/` |
+| 安装实测 | 静默覆盖安装 **EXITCODE 0**（未卡 `d3dcompiler_47.dll`）；`dist` ↔ `D:/Programs/Shunbo` **38/38 逐字节一致**（安装目录多出的只有 `unins000.dat`/`unins000.exe`）；`data/app.so` **8,569,736 B**，sha 与 `dist` 一致（`8edb7c63…ac8e5`，与修复前 `981b279c…` 不同 ⇒ 确实是新代码）；GUI 启动 **PID 14104 / 55 线程 / 1165.1 MB / 窗口「顺播 shunbo」**，验完已结束 | `build/install_fix23c.log` |
+| AOT 串取证 | app.so 8,569,736 B。**新符号命中**：`vodGenreKeyOf`=1、`vodGenreKeysOf`=2、`vodGenreKeysOfItem`=1、`mergeVodFacets`=1、`loadSupplementFor`=1、`supplementFileFor`=1、`vodIndexSupplementFileForUrl`=1、`_supplementItems`=1、`_readSupplementItems`=1、`_withSupplement`=1、`_resetIndexPool`=1、`_touchDetailPanel`=1、`_scheduleDetailCollapse`=1、`pointerLeftPanel`=1、`panelScrim`=1、中文「默认接口同样按追加方式」utf16=1。**已删符号清零**：`_supplementLoaded`=0、`_restartDetailTimer`=0、中文「收起详情」=0、「默认片源索引随包只读」=0。单包两 ABI（arm64 7,340,936 B / armv7a 8,176,200 B）同样命中 `_readSupplementItems`/`_withSupplement`/`vodGenreKeyOf`/`pointerLeftPanel` 各 1、`_restartDetailTimer` 0 | `python` 扫 app.so 与 APK 内 `libapp.so` |
+| 未验证 | ①默认接口首次启动会在后台跑一次增量取数（`last == null` 即允许），100 站第 1 页 / 90 s 预算，没有「关掉冷启动取数」的开关；②「共 N 条」把增补条数直接相加，没跟随包分片按片名去重（列表本身已去重），同一部新片两边都有时会多算；③悬停伸缩在 4K 全屏 + 240 卡网格的帧率未测，触摸屏手感未验证；④词表缺「古装」等词表外题材（严格照参考图），这些片只能从「全部」进 | README §70.6 |
+| 纪律 | 未提交、未推送；`legacy/` 零改动；不改播放参数；版本仍 `1.0.5+6` | `git status` |
+
+### 五十九、设置-点播源：去版本号 + 免责版权说明 + 自动更新间隔七档可选（1.0.5 同版重打，2026-11-13 12:2x）
+
+| 项 | 结论 | 证据 |
+|---|---|---|
+| 需求 | 两张截图、三条红标：①标题「点播源（1.0.5）」**版本号去除**；②输入框下面那行灰字位置**加一个简短的免责版权说明**；③「每 24 小时自动更新一次片源：…」那行**去除**，改成**可以手动设定更新时间**（一天 / 三天 / 一周 / 一月 / 一季度 / 半年 / 一年） | 用户第二十四次修红标 |
+| **① 版本号** | `_Section(title: '点播源（1.0.5）')` → `'点播源'`。版本号仍在「关于与诊断」四行里（应用 / 渠道 / 版本号 / 应用标识），区块标题不再挂版本 | `G03` 反向锁死；AOT「点播源（1.0.5）」utf16 = **0** |
+| **② 免责版权说明** | 输入框下方那行灰字（第二十三次修删掉 helperText 后一直空着）现在放：**「仅聚合第三方公开接口的索引信息，不提供、不存储、不传播任何影音内容；片源与版权归各来源站点所有，请自行确认来源合法。」** 字号 11 / `textTertiary` / 行高 1.4，两行内收住 | `G21`；AOT utf16 两句各 1 |
+| **③ 七档间隔** | 新文件 `lib/data/onboarding/vod_update_cadence.dart`：`VodUpdateCadence` 七档（一天 1 / 三天 3 / 一周 7 / 一月 30 / 一季度 90 / 半年 180 / 一年 365），`days`+`label`+`duration`，`fromDays()`/`tryParse()` 只认这七档，其余回落一天。单独成文件是因为设置持久化、调度器、UI 三处都要读 | `D25`/`D26` |
+| **③ 持久化** | `VodSourceAddressSettings.updateIntervalDays`（默认 1）落 `config.json` 的 `vodUpdateIntervalDays`；反序列化**最先**解析档位，后面「坏地址回默认」的早退用 `fallback()` 带上档位，不会把用户选的间隔丢掉 | `D21`–`D24` |
+| **③ 调度器** | 周期从「构造参数 24 h」改为「`runOnce` 现读 `settings.interval`」；定时器改 `Timer.periodic(kVodIndexUpdateTick)`（**1 小时**一跳，只问「按当前档位到点了吗」）⇒ 改档位下一次 tick 就生效，不必重启定时器；跳过文案改「距上次更新不足三天」（读档位 label）；`shouldUpdate` 保留可选第三参数 | `I24`/`I27b`/`I27c`/`I29b`；`H35` |
+| **③ 界面** | 「立即获取最新片源」按钮下方「自动更新间隔」+ 七个 chip（`Wrap` 换行、遥控器可聚焦）；自写 `_CadenceChip`（选中 = `accentDim` 底 + `accent` 描边），不用 `ChoiceChip`（Material 默认边框/勾选在深色页比正文还亮）。点档位**只落盘、不取数** | `G22`/`G23` |
+| 删掉的长说明 | 「每 24 小时自动更新一次片源：只取各接口最新一页…」整段 `_Tip` 删除，`_Tip` 组件一并删掉。其中「按 id 去重 / 只追加不重取 / 默认接口可追加」三条口径仍由 `H41`/`I19`/`D53` 等功能断言保证，不是靠文案 | `H42` 反向改写 |
+| 门禁 | `flutter analyze` **0 issue**；**44 步 / 4554 断言全通过**（上轮 4542，+12；EXIT=0、无 FAIL、140.2 s）。`vod-index-gate` 186 → **189**（I24 改七档表 + I27b/I27c 档位判断 + I29b 周期读设置；H35/H42 改写）；`vod-source-address` 128 → **137**（G03 反向 + G18 改写 + 新增 G21/G22/G23 + D21–D26） | `verify_all.dart` |
+| 产物（三件，同版重打） | APK **52,526,250 B**（full 48,063,274 / lite 28,877,312，单包 24/24）`11b035a0…64537b02`；setup **33,518,372 B** `7cc90fb3…b956c6`；portable **41,217,443 B / 38 文件** `3af6a558…a9fb81`。上一版归档 `dist/_prev/fix23b/` | `dist/` |
+| 安装实测 | **第一次静默安装 EXITCODE=2**：桌面上有一个正在运行的实例（PID 31384，用户截图时开着），`CloseApplications=force` + `PrepareToInstall taskkill` 没兜住就直接退了，**连安装日志都没生成**（`/LOG` 文件不存在，`app.so` 仍是 12:05 的旧文件）。关掉该实例后重跑 → **EXITCODE=0**，`dist` ↔ `D:/Programs/Shunbo` **38/38 逐字节一致**，`data/app.so` 8,569,736 B sha `8a3ee539…`（12:24）；GUI **PID 22384 / 49 线程 / 1156.8 MB / 窗口「顺播 shunbo」**，验完已结束 | `build/install_fix24*.log`、`build/inno_fix24.log` |
+| AOT 串取证 | app.so 8,569,736 B。**新符号命中**：`VodUpdateCadence`=2、`_CadenceChip`=1、`_selectCadence`=1、`updateIntervalDays`=1、`fromDays`=1、`tryParse`=5、`shouldUpdate`=5；UTF-16LE「自动更新间隔」1 /「一季度」1 /「仅聚合第三方公开接口的索引信息」1 /「片源与版权归各来源站点所有」1 /「距上次更新不足」1。**已删文案清零**：「点播源（1.0.5）」**0**、「每 24 小时自动更新一次片源」**0**、`_Tip` **0**。（`kVodIndexUpdateTick`/`kVodIndexUpdateInterval` 是 const，内联后为 0，属预期。）单包两 ABI（arm64 7,406,472 B / armv7a 8,176,200 B）同样 `VodUpdateCadence`=2、`_CadenceChip`=1、免责句=1、「点播源（1.0.5）」=0 | `python` 扫 app.so 与 APK 内 `libapp.so` |
+| 未验证 | ①「一季度 / 半年 / 一年」只做了纯函数与计数验证，**没跨月跨年实测**；②每小时 tick 在电视端长期后台的耗电未测（每跳只读一次设置文件）；③改小档位后「上次更新时间」不清零，把一年改成一天且上次就在昨天时会立刻到点，下次 tick 就取一次 —— 有意，但界面没解释；④设置页七 chip 在窄窗口（比如 800×600 电视形态）是否换行成两行未截图确认 | README §71.5 |
+| 纪律 | 未提交、未推送；`legacy/` 零改动；不改播放参数；版本仍 `1.0.5+6` | `git status` |
+
+### 六十、索引误报「已失效」+ 右栏完全隐藏（1.0.5 同版重打，2026-11-13 12:5x）
+
+| 项 | 结论 | 证据 |
+|---|---|---|
+| 需求 | 两张截图：①点卡片弹「这条索引记录已失效，请重新检索」，**过一会又好了**，要排查；②右栏「要和左栏一样，当一定时间没有任何响应要自动隐藏，只有当鼠标移入区域才显示出来，**隐藏后不要再有详情条**，参考左栏完全隐藏」 | 用户第二十五次修红标 |
+| **① 真凶** | **不是索引坏了**。`_openAndPlay` 用 `hitById(item.id)` 判「失效」，而 `_byId` 是**会话级缓存**：只在 `toItem()` 里写入、上限 `kHitIndexCap = 4000`、老实现到顶 `_byId.clear()` **整表清空**、不落盘。浏览 ~33 页（120/页）+ 几次筛选（每次 ≤400 命中）就会溢出 ⇒ 屏幕上还摆着的卡片全部查不到命中 ⇒ 误报。列表没坏，切走再切回来会重新载入一页并把命中表填回去 ⇒ 表现为「过一会就好了」 | README §72.1 |
+| **① 修法一** | 不再把「缓存里没有」等于「记录失效」：新增顶层纯函数 `parseBuiltinHitId()`（拆 `builtin:<站点下标>:<vod_id>`）与 `BuiltinIndexService.hitByIdOrRebuild()`（查不到就按 id 重建命中）。回源 `fetchDetail` 只需要这两个字段 ⇒ id 结构完好且站点下标未越界就**一定可回源**；`typeId` 缺失只影响类型栏显示 | `J07`–`J15` |
+| **① 修法二** | `_remember()` 到顶改成**淘汰最早的 1/4**（`final drop = kHitIndexCap ~/ 4;` + `keys.take(drop)`），不再一次铲掉工作集 | `J16` |
+| **① 保留的准确提示** | 只有两种情形仍报失效：id 结构解析不出（非 `builtin:` / 缺分隔符 / 负下标 / 空 vod_id）、站点下标越界。`_openAndPlay` 在 await 后补 `if (!mounted \|\| seq != _resolveSeq) return;`；`_retryOpen` 用 `identical(_item, item)` 拦「回包晚到换了片」 | `J09` / `J14` / `J15` |
+| **② 右栏完全隐藏** | `AnimatedPositioned` 的收起从「`width` 缩到 44 px 竖条」改成「`right` 滑到 `-width`」，与左栏 `left: -188` 同构；滑动时长 `kVodDetailSlideDuration = 240ms`（与左栏 `AnimatedPositioned` 同档）；`_detailRail()` 组件与 `kVodDetailRailWidth` 常量删除；不再用 `AnimatedSwitcher` 换一套 UI，只滑同一块 `_detailBody` | `T04` / `T23` / AOT `_detailRail`=0 |
+| **② 怎么叫回来** | 新增 `_detailLayer(item)`：`[面板, if (!_detailExpanded) EdgeRevealHandle(side: EdgeSide.right)]` —— 与左栏同一个组件（贴边 400 ms 自动展开 / 点一下 / 从边缘往内拖）；遥控器仍是 I / D / info / guide 四键 | `T14` / `T06` |
+| **② 改名** | `VodDetailInput.pointerOnRail` → `pointerOnEdge`（语义从「点在竖条上」变「指针进右边缘热区」） | `T06`，AOT `pointerOnRail`=0 |
+| 门禁 | `flutter analyze` **0 issue**；**44 步 / 4566 断言全通过**（上轮 4554，+12；EXIT=0、无 FAIL、130.5 s，日志 `build/verify_all_fix24b.log`）。`vod-playback` 217 → **219**（T04/T06/T13/T14 改写 + T23/T24 新增）；`vod-builtin-service` 119 → **129**（J07–J16 新增） | `verify_all.dart` |
+| 产物（三件，同版重打） | APK **52,460,714 B** `5cb5d973…3ea5896`（full 47,997,737 / lite 28,877,308，单包 24/24）；setup **33,516,695 B** `5a16ebc8…8fb220bd`；portable **41,217,304 B / 38 文件** `25ab3086…9b056ae`。上一版归档 `dist/_prev/fix24/` | `dist/` |
+| 安装实测 | 安装前先 `CloseMainWindow()` 关掉用户当时开着的实例（PID 25064，第二十四次修踩过 `EXITCODE=2` 且**连日志都不生成**的坑）→ 静默覆盖 **EXITCODE 0**；`dist` ↔ `D:/Programs/Shunbo` **38/38 逐字节一致**（多出 `unins000.*` 两个卸载器）；`data/app.so` 8,569,736 B `1436ced3…`（12:52）；GUI **PID 29264 / 50 线程 / 1124.9 MB / 窗口「顺播 shunbo」**（验完保留运行，方便用户直接看效果） | `build/inno_fix24b.log` |
+| AOT 串取证 | app.so 8,569,736 B。**新符号命中**：`hitByIdOrRebuild`=1、`parseBuiltinHitId`=1、`BuiltinHitRef`=2、`_detailLayer`=1、`_remember`=2、「这条索引记录已失效，请重新检索」utf16=1。**已删符号清零**：`kVodDetailRailWidth`=0、`_detailRail`=0、`vod-detail-rail`=0、`pointerOnRail`=0。（`kVodDetailSlideDuration` 是 const、内联后为 0，与上轮 `kVodIndexUpdateInterval` 同况。）单包两 ABI（arm64 7,340,936 / armv7a 8,176,200）同样 `parseBuiltinHitId`=1、`hitByIdOrRebuild`=1、`_detailLayer`=1、`_detailRail`=0、`pointerOnRail`=0 | `python` 扫 app.so 与 APK 内 `libapp.so` |
+| 未验证 | ①「表满 → 淘汰」只用源码断言锁住，**没真跑 4000 条命中**再点卡片；②右边缘热区有上下各 80 px 边距不可热（与左栏同策略），鼠标停在最上/最下 80 px 会呼不出面板，键盘 I/D 仍可用；③触屏没有常驻手柄，唤出只靠 I/D/info/guide | README §72.4 |
+| 纪律 | 未提交、未推送；`legacy/` 零改动；不改播放参数；版本仍 `1.0.5+6` | `git status` |
+
+### 六十一、获取进度条 + 不许死循环 + 输入页「当前接口」（1.0.5 同版重打，2026-11-13 13:2x）
+
+| 项 | 结论 | 证据 |
+|---|---|---|
+| 需求 | 两张截图：①「正常能获取时要有进度条，无法获取时会一直闪，当获取不到要有提醒，不能死循环」；②红框标在「安装包内置索引目录记录的接口：http://47.96.82.41:5188/config.json」，红字「改成当前接口，如果没有就是空，初次加载也是空，要有简短免责说明」 | 用户第二十六次修红标 |
+| **① 进度条** | 新文件 `lib/features/vod/vod_build_progress.dart`：`VodBuildStage`（connecting/fetching/saving/done/failed）+ 站点数 + 条数，`fraction`/`note` 全是纯函数。`VodSession._runStart` 每批上报（`finishedSites`/`siteCount`/`_loaded`）→ 装配层转交 `gate.reportBuildProgress` → 设置页与点播页读 `gate.buildProgress` 渲染 `LinearProgressIndicator` | `J01`–`J14` |
+| **① 进度口径** | 站点翻完**封顶 0.9**（写盘未完，先到 100% 再停住更像卡死）；0/45 给 **0.02**（空条形图看不出已启动）；站点总数未知返回 **null** 走不确定进度条；文案「已完成 12/45 个站，已取 1,240 条」不用百分数。设置页另有「已用 N 秒」（500 ms 本地计时器，只在获取期间跑） | `J02`–`J07` |
+| **① 闪的真因 A** | **提交未通过 ⇒ 自动弹回输入页 ⇒ 再提交**。`_maybePromptAddress` 在 `needAddress` 自动弹窗，提交后仍不 ready 又弹 ⇒ 对话框反复闪。现在 `if (!verdict.ready)` ⇒ `_addressPromptDismissed = true` + toast，要重试必须自己点「重试 / 改地址」 | `H45` |
+| **① 配套** | 装配层 `rebuild` 遇默认地址不再静默 `return null`（那是循环的燃料），改成回一句「随包默认索引目录不可用（缺失或未记录接口地址），请换一个接口地址」 | `H18`/`H32`/`G15`/`G16` |
+| **① 闪的真因 B** | **生成没有硬截止**：`VodSession` 的 90 s 预算只在**批间**检查，单批卡住就无限等。闸门外加 `kVodIndexBuildDeadline = 3 分钟`，到点判 failed 并给可读理由。坑：`Future.timeout` 按**接收者运行时泛型**检查 `onTimeout`，实现只 `return null` 时是 `Future<Null>` ⇒ 先 `.then<String?>((v) => v)` 规范化，否则抛 `TypeError` | `J12`/`J13` |
+| **① 闪的真因 C** | **提交期间输入框置灰 ⇒ 丢焦点 ⇒ 再触发失焦提交**。`enabled: !_busy` → `readOnly: _busy || _updating`：禁编辑但保住焦点 | `G24`（反向锁死 `enabled: !_busy`） |
+| **① 一定收场** | `_submit` 的 `_buildProgress` 置位/清除包在 `try/finally`；设置页 `_busy`/`_updating` 都加 `catch` 兜底并给结论文本，失败用告警色（`_noteIsError`）；构建结束后**迟到的进度上报一律丢弃**（`reportBuildProgress` 在 `_buildProgress == null` 时直接 return），否则界面会从「失败」跳回「正在获取 87%」 | `J10`/`J11`/`G25` |
+| **② 当前接口** | 输入页那行固定地址改成**用户设定的接口**（`selectedUrl`），没设过整块不渲染；输入框也只预填这条（初次为空）；删掉「填同一个地址可直接加载…」提示与「填入内置索引地址」按钮（保留「填入默认源地址」） | `H12`；AOT「填入内置索引地址」=0、`builtinSourceUrl`=0 |
+| **② 免责说明** | 对话框底部固定：「仅聚合第三方公开接口的索引信息，不提供、不存储、不传播任何影音内容；片源与版权归各来源站点所有，请自行确认来源合法。」（10 px / tertiary） | `H12`；AOT utf16=1 |
+| **② 空输入不报错** | 新增 `_attempted`：只有点过「确定」之后才显示校验红字，初次打开不再一进门就顶一行「请填写片源接口地址」 | `dialog.contains('_attempted')` |
+| 门禁 | `flutter analyze` **0 issue**；**44 步 / 4583 断言全通过**（上轮 4566，+17；EXIT=0、无 FAIL、133.0 s，`build/verify_all_fix26.log`）。`vod-index-gate` 189 → **204**（J01–J14 新增、H12/H18/H32 改写、H45 新增）；`vod-source-address` 137 → **139**（G15 同步 + G24/G25）；`third-party-vod` 152 → 152（G16 改写，不放宽） | `verify_all.dart` |
+| 产物（三件，同版重打） | APK **52,608,170 B** `46d737ef…6641e9b1`（full 48,145,146 / lite 28,893,635，单包 24/24）；setup **33,526,774 B** `b015f9c0…7f581679`；portable **41,225,314 B / 38 文件** `94608511…125ff6b`。上一版归档 `dist/_prev/fix25/` | `dist/` |
+| 安装实测 | 装前先关掉用户开着的实例（PID 15836 / 60 线程）→ 静默覆盖 **EXIT=0**；`dist` ↔ `D:/Programs/Shunbo` **38/38 逐字节一致**（多出 `unins000.dat`/`unins000.exe` 两个卸载器）；`data/app.so` 8,586,120 B `7579b4e0…63cb4b7`；GUI **PID 23928 / 58 线程 / 564.8 MB / 窗口「顺播 shunbo」**（保留运行，方便直接看效果） | `build/inno_fix26.log` |
+| AOT 串取证 | app.so 8,586,120 B。**新符号命中**：`VodBuildProgress`=2、`reportBuildProgress`=1、`_startTicker`=2、`_statusArea`=1、`_stopTicker`=1、`VodBuildStage`=2；utf16「正在获取片源：已完成」1 /「正在连接接口并读取配置」1 /「已用 」1 /「获取超时」1 /「随包默认索引目录不可用」1 /「当前接口：」1 /「仅聚合第三方公开接口的索引信息」1。**已删存在清零**：`builtinSourceUrl`=0、「填同一个地址可直接加载」=0、「填入内置索引地址」=0。单包两 ABI（arm64 7,472,008 / armv7a 8,192,584）同验 | `python` 扫 app.so 与 APK 内 `libapp.so` |
+| 未验证 | ①真实爬升速度未测（替身分页器验的逻辑），弱网下可能长时间停在 0.02；②3 分钟超时没真跑到（要造一个卡死的站），只用源码断言；超时后底层那次 `saveFor` 若最终完成会写出一份当前未启用的目录文件，下次进点播才生效；③对话框反复弹只用源码断言锁住，没在 UI 上连点十次 | README §73.5 |
+| 纪律 | 未提交、未推送；`legacy/` 零改动；不改播放参数；版本仍 `1.0.5+6` | `git status` |
+
+### 六十二、状态句「默认」→「当前」（1.0.5 同版重打，2026-11-13 13:4x）
+
+| 项 | 结论 | 证据 |
+|---|---|---|
+| 需求 | 设置-点播源截图，红框框住「与默认片源索引地址一致，已直接复用默认记录（未发起网络请求）」，箭头批注「把『默认』文字改成『当前』」 | 用户第二十七次修红标 |
+| 改动 | 只改一条字符串字面量：`与当前片源索引地址一致，已直接复用当前记录（未发起网络请求）`。两处「默认」**一起换** —— 只换前半句会变成同一格里两种口径 | `vod_source_section.dart` `_submitAddress()` |
+| 有意保留的两处「默认」 | ①状态行无地址时「当前生效：默认片源索引（随包）」——修饰随包资产本身，改「当前」会变成「当前生效：当前片源索引」；②`main.dart` 失败理由「随包默认索引目录不可用」——「随包默认」是名词，不是口径对照 | README §74.2 |
+| 判断链未动 | `decideVodIndexSubmit()` 三判据、`builtin.matches(url)` → `loadExisting` 零网络分支、`fileFor(default) == null` 护栏全部未改 | `G15`/`G16` 仍通过 |
+| 门禁 | `flutter analyze` **0 issue**；**44 步 / 4584 断言全通过**（上轮 4583，+1）。`vod-source-address` 139 → **140**：新增 `G26` 正向锁新句、反向锁旧句为 0 | `build/verify_all_105.log` |
+| 产物（三件，同版 1.0.5） | APK 52,608,170 B `bb1f0b23…ae594b1`（full 48,145,149 / lite 28,893,643，单包 24/24）；setup 33,526,521 B `cbf3867e…55d075`；portable 41,225,312 B / 38 文件 `0412ab46…c2ca4df091`。**字节数与上一轮几乎一致**：同长度替换（「默认」→「当前」各 2 汉字 = 6 字节），只有 sha 变 | `dist/_prev/fix27/` |
+| AOT 取证 | UTF-16LE 新句=1、旧句=0；`当前生效：`=1（状态行未受影响）；单包两 ABI 同验 | app.so / `libapp.so` |
+| 未验证 | 纯字符串替换，无可测行为面。唯一副作用：用户手里的红标截图是旧版，对不上新文案 | README §74.5 |
+| 纪律 | 未提交、未推送；`legacy/` 零改动；不改播放参数 | `git status` |
+
+### 六十三、选集右栏 6 秒无响应自动隐藏 + 版本升 1.0.6（2026-11-13 14:1x）
+
+| 项 | 结论 | 证据 |
+|---|---|---|
+| 需求 | 播放页选集抽屉截图，红字「播放页面，选集弹出的右边栏如图，当无响应 6 秒需要自动隐藏」；随后指令「将当前版本升为 1.0.6」 | 用户第二十八次修红标 + 升版指令 |
+| 实现 | 新增 `lib/ui/vod/panel_idle_hider.dart` 的 `PanelIdleHider`（`idle` / `onIdle` / `child`）。计时器跟着 widget 生命周期走（`initState` 起、`dispose` 取消），所以「点条目 / 点 X / Esc / 换集 / 退播放」任何一条关闭路径都不会漏掉取消 | `T25`/`T28` |
+| 常量 | `kVodEpisodeIdleHide = Duration(seconds: 6)`，与 `kVodControlsIdleTimeout`(4 s)、`kVodDetailHoverExitDelay`(1.2 s)、`kVodDetailIdleTimeout`(8 s) 同处：6 秒夹在「控制条 4 秒」与「读文字 8 秒」中间 | `T25` |
+| 「有响应」口径 | **六类信号**任一都重置计时：`onHover` / `onPointerDown` / `onPointerMove` / `onPointerSignal`（滚轮，不触发 hover）/ `ScrollNotification`（拖滚动条）/ `Focus.onFocusChange` + `Focus.onKeyEvent`（遥控器）。只接 `onHover` 会把「正在翻集数」的用户误收 | `T27` |
+| 收起动作 | `onIdle` 先复核 `if (!mounted || !_showEpisodes) return;`（到点可能已被别的路径关掉）→ `setState(() => _showEpisodes = false)` → `_pokeControls()` 让控制条亮回来 | `T26` |
+| 接线 | `_episodePanel` 的 `Positioned` 内多一层 `PanelIdleHider(idle: kVodEpisodeIdleHide, …)`，`Material/SafeArea/Column/ListView` 原样不动（状态不重建） | `vod_page.dart` `_episodePanel` |
+| 升版 | `1.0.5+6` → **`1.0.6+7`**：`pubspec.yaml`、`system_channel.dart`（name/code）、`tooling/windows_installer.iss`；**新建** `dist/windows/Shunbo-1.0.6.iss`（`VersionInfoVersion=1.0.6.7`、`ProductVersion=1.0.6`、`TextVersion=1.0.6+7`，BOM+CRLF 保持）与 `dist/windows/Shunbo-1.0.6/`（Release 覆盖 + 补 10 个 VC++ DLL）；单包合并显式传 `--version-name 1.0.6 --version-code 7` | 4 个门禁文件同步（R12×4 / I01 / N09 / G14·G36 / H01–H03） |
+| 踩坑 | `dart format` 把 `widget.services.live.stop().timeout(…)` 拆成三行 ⇒ `I05` 的 `contains('widget.services.live.stop()')` 当场失败。断言改成 `RegExp(r'services\.live\s*\.\s*stop\(\)')`，**语义未放宽**（仍要求起播前先停直播），只是不再依赖格式化风格 | `I05` |
+| 门禁 | `flutter analyze` **0 issue**；**44 步 / 4588 断言全通过**（上轮 4584，+4；EXIT=0、110.3 s，`build/verify_all_106.log`）。`vod-playback` 219 → **223**（T25–T28 新增、I05 改写） | `verify_all.dart` |
+| 产物（三件，1.0.6） | APK **52,608,170 B** `253dbc6d…dc35d7`（full 48,145,142 / lite 28,893,638，单包 24/24）；setup **33,527,503 B** `ff8eb08a…eef503d`（`FileVersion=1.0.6.7`）；portable **41,229,215 B / 38 文件** `6c88f60d…050b24c`。1.0.5 三件归档 `dist/_prev/fix27/`，`dist/` 根只剩 1.0.6 + 1.0.4 基线 | `dist/` |
+| 安装实测 | 先 `CloseMainWindow()` 关掉 1.0.5 实例 → 静默覆盖 **EXIT=0**、`/LOG` 生成；`dist/windows/Shunbo-1.0.6` ↔ `D:/Programs/Shunbo` **38/38 逐字节一致**（多 `unins000.dat`/`unins000.exe`）；`data/app.so` 8,586,120 B `5197e4ab…0cfe9d7a`；GUI **PID 28104 / 49 线程 / 1063 MB / 窗口「顺播 shunbo」**（保留运行） | `build/inno_106.log` |
+| AOT 串取证 | `PanelIdleHider`=2、`_PanelIdleHiderState`=1、`_restart`=3、`1.0.6`=1；utf16「与当前片源索引地址一致，已直接复用当前记录（未发起网络请求）」=1、「与默认片源索引地址一致」=0、「选集（」=2。`kVodEpisodeIdleHide`=0 属正常（`const Duration` 编译期内联，无符号）。单包两 ABI（arm64 7,472,008 / armv7a 8,192,584）均 `PanelIdleHider`=2 | app.so / `libapp.so` |
+| 未验证 | ①6 秒真实手感未量（`flutter test` 本工程不可用，只能源码断言 + 用户验收）：点开后静置是否准点收 / 翻列表是否被误收 / 收后控制条是否亮回；②遥控器走 `Focus.onKeyEvent` 无真机（S50 Air）实测；③抽屉是直接消失，没有 240 ms 滑出动画（本轮未要求） | README §75.7 |
+| 纪律 | 未提交、未推送；`legacy/` 零改动；不改播放参数 | `git status` |

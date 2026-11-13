@@ -42,14 +42,23 @@ private class PlayerSurface(
     private val textureView = TextureView(context)
     private var surface: Surface? = null
 
+    /**
+     * 布局监听必须存成字段才能注销。
+     *
+     * 旧实现用匿名 `OnLayoutChangeListener`，`dispose()` 时无法移除，于是
+     * 视图销毁过程中（尺寸归零、脱离窗口）仍会回调 `scale.apply(v)`，
+     * 对正在销毁的 `TextureView` 做 `setTransform` —— 这也是闪退的来源之一。
+     */
+    private val layoutListener = View.OnLayoutChangeListener { v, _, _, _, _, _, _, _, _ ->
+        scale.apply(v as TextureView)
+    }
+
     init {
         // 视频尺寸未知时矩阵无意义，但一旦内核报出宽高、或用户切了模式，
         // 都必须立刻重算——这两个时机都在 [VideoScaleController.refresh] 里。
         scale.attach(textureView)
         // 视图尺寸变化（旋转、进出全屏、分屏）会改变基准缩放，必须重算。
-        textureView.addOnLayoutChangeListener { v, _, _, _, _, _, _, _, _ ->
-            scale.apply(v as TextureView)
-        }
+        textureView.addOnLayoutChangeListener(layoutListener)
         textureView.surfaceTextureListener = object : TextureView.SurfaceTextureListener {
             override fun onSurfaceTextureAvailable(
                 surfaceTexture: SurfaceTexture,
@@ -68,11 +77,12 @@ private class PlayerSurface(
             ) = Unit
 
             override fun onSurfaceTextureDestroyed(surfaceTexture: SurfaceTexture): Boolean {
-                // 先释放我们持有的 Surface 再让框架回收 SurfaceTexture，
-                // 否则播放器可能往已释放的 buffer 里写。
+                // 顺序是硬要求：先把播放器从 Surface 上解绑，再 release。
+                // 反序会让渲染线程往已释放的 buffer 写帧（native 崩溃）。
+                host.detachSurface()
                 surface?.release()
                 surface = null
-                host.detachSurface()
+                // 返回 true：SurfaceTexture 由框架回收（我们已不再持有它）。
                 return true
             }
 
@@ -83,11 +93,15 @@ private class PlayerSurface(
     override fun getView(): View = textureView
 
     override fun dispose() {
-        // 先注销缩放登记：视图即将销毁，继续持有会让控制器往已释放的
-        // TextureView 上 setTransform（ANR/崩溃风险）。
+        // 四步顺序都不能换：
+        // 1) 注销布局监听 —— 否则销毁过程中仍会 apply 到已销毁视图；
+        // 2) 注销缩放登记 —— 控制器不再持有这个 TextureView；
+        // 3) 让播放器解绑 Surface —— 必须在 release 之前；
+        // 4) 最后才 release —— 此后没有任何一方还引用它。
+        textureView.removeOnLayoutChangeListener(layoutListener)
         scale.detach(textureView)
+        host.detachSurface()
         surface?.release()
         surface = null
-        host.detachSurface()
     }
 }

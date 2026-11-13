@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show rootBundle;
 import 'package:shunbo/app/app_shell.dart';
 import 'package:shunbo/app/display_mode.dart';
 import 'package:shunbo/app/form_factor_controller.dart';
@@ -19,7 +20,18 @@ import 'package:shunbo/features/live/carrier_detector.dart';
 import 'package:shunbo/features/live/channel_settings_store.dart';
 import 'package:shunbo/features/live/network_channel.dart';
 import 'package:shunbo/features/live/preferred_stream.dart';
+import 'package:shunbo/features/vod/vod_auto_source.dart';
+import 'package:shunbo/features/vod/vod_boot_index.dart';
+import 'package:shunbo/features/vod/vod_builtin_index.dart';
+import 'package:shunbo/features/vod/vod_builtin_service.dart';
 import 'package:shunbo/features/vod/vod_catalog.dart';
+import 'package:shunbo/features/vod/vod_facet_directory.dart';
+import 'package:shunbo/features/vod/vod_build_progress.dart';
+import 'package:shunbo/features/vod/vod_index_gate.dart';
+import 'package:shunbo/features/vod/vod_poster_service.dart';
+import 'package:shunbo/features/vod/vod_library.dart';
+import 'package:shunbo/features/vod/vod_session.dart';
+import 'package:shunbo/features/vod/third_party_vod.dart';
 import 'package:shunbo/app/cast_support.dart';
 import 'package:shunbo/core/cast/cast_fallback.dart';
 import 'package:shunbo/core/cast/cast_metrics.dart';
@@ -56,9 +68,16 @@ import 'package:shunbo/data/live_region_store.dart';
 import 'package:shunbo/data/preferred_stream_store.dart';
 import 'package:shunbo/data/onboarding/onboarding_flow.dart';
 import 'package:shunbo/data/onboarding/sample_source_config.dart';
+import 'package:shunbo/data/onboarding/source_config_url.dart';
 import 'package:shunbo/data/onboarding/source_import_service.dart';
 import 'package:shunbo/data/onboarding/source_trust.dart';
 import 'package:shunbo/data/onboarding/source_trust_store.dart';
+import 'package:shunbo/data/onboarding/third_party_vod_service.dart';
+import 'package:shunbo/data/onboarding/vod_index_directory_store.dart';
+import 'package:shunbo/data/onboarding/vod_index_updater.dart';
+import 'package:shunbo/data/onboarding/vod_library_store.dart';
+import 'package:shunbo/data/onboarding/vod_source_address.dart';
+import 'package:shunbo/data/onboarding/vod_source_address_store.dart';
 import 'package:shunbo/data/resume_record.dart';
 import 'package:shunbo/data/sync/resume_sync_engine.dart';
 import 'package:shunbo/data/sync/sync_transport.dart';
@@ -278,8 +297,11 @@ Future<void> main() async {
   await formFactor.load();
   debugPrint('[form] ${formFactor.report.diagnosticText()}');
   // R4：首帧前就把方向/系统栏定下来（电视锁横屏 + 沉浸，手机横竖屏均可）。
-  unawaited(DisplayMode(onAndroid: formFactor.onAndroid)
-      .apply(form: formFactor.form, fullscreen: false));
+  // 桌面端这里只下发 `fullscreen: false`（把窗口装饰还回去），方向不接管。
+  unawaited(DisplayMode(
+    onAndroid: formFactor.onAndroid,
+    isDesktop: formFactor.isDesktop,
+  ).apply(form: formFactor.form, fullscreen: false));
   final diskStore = FileResumeStore.at(AppPaths.file(AppPaths.resumeFile));
   // E6 跨端续播同步：装饰器拦截写入 → 待同步队列；演示用共享目录传输（LAN 降级路径）。
   final syncStore = SyncAwareResumeStore(diskStore);
@@ -317,6 +339,8 @@ Future<void> main() async {
   // 运营商通道设置：新装读出的是「组播关闭 + 自动识别」，即档位 C 的默认形态。
   // 必须在 LiveController 构造之前读出来，否则首帧会先用默认策略跑一轮。
   final channelStore = ChannelSettingsStore(configStore);
+  // 1.0.5 G1 开放接口：默认关闭，仅在设置页由用户显式启用后才会被读取。
+  final vodSourceStore = VodSourceAddressStore(configStore);
   final channelSettings = await channelStore.load();
   final savedOnboarding = await configStore.loadState('onboarding');
   // 播放偏好（自动连播开关）与引导状态同库同机制：重启后保持用户选择。
@@ -379,9 +403,511 @@ Future<void> main() async {
 
   // 内置点播片库注册成普通源：点播因此直接复用既有的续播、进度落盘、
   // 自动连播与换源对齐能力，不需要为「内置片库」另写一套播放链路。
-  final vodAdapter = VodCatalog.buildAdapter();
-  registry.register(vodAdapter);
-  catalog.register(vodAdapter.profile);
+  // 1.0.5：改由 VodLibrary 持有（默认仍是内置片库），第三方条目接入时
+  // 会注册自己的适配器，栏目页监听刷新即可，播放链路不变。
+  final vodLibrary = VodLibrary(registry: registry, catalog: catalog);
+  final thirdPartyVod = ThirdPartyVodService();
+  final vodLibraryStore =
+      VodLibraryStore.at(AppPaths.file(AppPaths.vodLibraryFile));
+
+  // ── 1.0.5 第 1 项：安装包内置检索索引 ─────────────────────────────
+  //
+  // 口径（README §60 有完整推导）：采集接口全量 135 万条，`?ac=detail`
+  // 单条 17 KB（播放地址占 13.6 KB），完整目录约 21 GB —— 装不进任何安装包。
+  // 内置的是**精简检索索引**：站点下标 + vod_id + type_id + 片名，按栏目分片
+  // gzip（`assets/vod_index/*.tsv.gz`）。索引负责「搜得到」，用户点开某部片时
+  // 用 `?ac=detail&ids=` 回源拿播放地址，负责「播得了」。
+  //
+  // 片名做前端编码（只存与上一行的公共前缀长度 + 后缀），Python 打包侧与
+  // Dart 读取侧共用同一套词表与同一套截取口径，门禁双向交叉校验。
+  Future<BuiltinIndexManifest?> loadBuiltinManifest() async {
+    try {
+      final text = await rootBundle.loadString('assets/vod_index/manifest.json');
+      return BuiltinIndexManifest.decode(text);
+    } catch (_) {
+      // 老安装包 / 裁剪过的渠道包里没有这份资产：当作没有内置索引，
+      // 启动校验会走网络同步，行为与 1.0.4 一致。
+      return null;
+    }
+  }
+
+  late final BuiltinIndexService vodBuiltin;
+  vodBuiltin = BuiltinIndexService(
+    loadManifest: loadBuiltinManifest,
+    loadShardBytes: (file) async {
+      try {
+        final data = await rootBundle.load('assets/vod_index/$file');
+        return data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes);
+      } catch (_) {
+        return null;
+      }
+    },
+    // 回源：拿站点下标指向的采集接口，用 `?ac=detail&ids=<vod_id>` 取一条详情，
+    // 解析出剧集地址后组装成可播条目。
+    //
+    // 两个口径必须钉住：
+    //  * **明文 http 无条件放行**。索引里这些站点地址是打包时固化在安装包内的，
+    //    不是用户输入 —— 与「用户手输地址要显式放行」是两件事；不放行则默认
+    //    索引点了全黑，等于没有。
+    //  * **id 与网络同步口径一致**（`源id:站点key:vod_id`）。这样同一部片
+    //    从索引点开、还是从网络同步里点开，续播记录是同一条。
+    fetchDetail: (hit) async {
+      final manifest = await vodBuiltin.ensureManifest();
+      if (manifest == null) return null;
+      if (hit.siteIndex < 0 || hit.siteIndex >= manifest.sites.length) return null;
+      final site = manifest.sites[hit.siteIndex];
+      final cms = CmsSite(key: site.key, name: site.name, api: site.api);
+      final res = await fetchSourceConfigUrl(
+        cms.detailUrl(<String>[hit.vodId]),
+        allowInsecureHttp: true,
+        useSystemProxy: false,
+        timeout: const Duration(seconds: 8),
+        rejectHtml: true,
+      );
+      if (!res.ok || res.text == null) return null;
+      final details =
+          await parseCmsDetailsAsync(res.text!, baseUrl: site.api);
+      final detail = details[hit.vodId];
+      if (detail == null || detail.episodes.isEmpty) return null;
+      final sourceId = ThirdPartyVodService.sourceIdFor(manifest.sourceUrl);
+      // 类目 id → 中文名（`25` → 「国产剧」）。查不到留空，**不回退成 id** ——
+      // 「类型」行里冒出「25」是 1.0.5 第十五次修实测到的症状。
+      final typeLabel = manifest.typeNameOf(hit.siteIndex, hit.typeId);
+      final item = VodItem(
+        id: '$sourceId:${site.key}:${hit.vodId}',
+        title: hit.name,
+        subtitle: <String>[
+          site.name,
+          if (typeLabel.isNotEmpty) typeLabel,
+        ].join(' · '),
+        description: detail.content.isEmpty
+            ? '由内置检索索引点开，播放地址从 ${site.name} 采集接口获取。'
+            : detail.content,
+        license: kThirdPartyLicense,
+        // 栏目用**索引里已经定好**的，不重新按 typeName 猜：
+        // 详情接口不保证回 type_name，重猜会把动漫/短剧打回电影栏目。
+        section: vodSectionFromKey(hit.section),
+        episodes: detail.episodes,
+        sourceId: sourceId,
+        posterUrl: detail.poster,
+        typeName: typeLabel,
+        // 详情接口回源时会带 `vod_class`（列表接口不给）。这是「类型」维度
+        // 唯一能拿到 `vod_class` 的时机，顺手存进本地记录。
+        genre: detail.genre,
+      );
+      // 挂进播放链路，之后起播 / 续播 / 换源对齐全部复用既有能力。
+      vodLibrary.adoptResolved(item);
+      return item;
+    },
+  );
+
+  // ── 1.0.5 第 2 项：启动校验与加载 ─────────────────────────────────
+  //
+  // 一致性依据三档（顺序不能换）：
+  //  1. **接口地址**：内置索引打包时用的接口 vs 用户当前设定的接口。
+  //     不一致就说明索引里的 vod_id 指向另一个站，先加载再发现只会让用户
+  //     看到一堆点不开的卡片，所以这项必须在发网络之前判。
+  //  2. **新鲜度**：manifest.generatedAt 超过 7 天视为过期。
+  //  3. **完整性**：分片读不到 / 条数为 0 ⇒ 视为不一致。
+  //
+  // 回退链：一致 → 直接读本地分片（不发网络）；不一致 → 从用户设定的接口
+  // 同步；同步失败 → 回退内置索引并明示「可能不是最新」。
+  //
+  // 声明提前：`syncNetwork` 回调里要用 `vodSession`（真正执行分页同步的还是
+  // 同一条会话，不另起一套下载路径），而会话本身要等片库恢复完才能建。
+  late final VodSession vodSession;
+  final vodAddressSettings = await vodSourceStore.load();
+  final vodBootSelectedUrl = vodAddressSettings.usesBuiltIn
+      // 用户没开外部地址（默认）：当前设定就是内置索引对应的默认源，
+      // 判为一致，直接进本地索引，不联网。
+      ? kVodDefaultSourceUrl
+      : vodAddressSettings.effectiveUrl;
+  final vodBoot = VodBootController(
+    loadManifest: loadBuiltinManifest,
+    loadShard: (file) async {
+      try {
+        final data = await rootBundle.load('assets/vod_index/$file');
+        return data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes);
+      } catch (_) {
+        return null;
+      }
+    },
+    syncNetwork: () async {
+      if (!vodAddressSettings.enabled) return '外部地址未启用';
+      final result = await vodSession.start(
+        url: vodBootSelectedUrl,
+        allowInsecureHttp: vodAddressSettings.allowInsecureHttp,
+        allowExternalCode: vodAddressSettings.allowExternalCode,
+        preserveExisting: true,
+      );
+      if (result.ok) return null;
+      return result.message.isEmpty ? '接口未返回可播放条目' : result.message;
+    },
+  );
+
+  // 冷启动本地优先：先把「内容检索记录」读进来（读一个本地 JSON，几毫秒），
+  // 栏目展示与内容检索都是这份记录派生出来的 [VodLibrary.items]，
+  // 网络只负责在后台做增量同步，不参与首屏渲染。
+  // 这一步失败不影响任何功能，只是回到「首次进入要等网络」的老行为。
+  //
+  // 内置索引的**覆盖策略**（用户要求的最后一项）在这里落地：
+  //  * 新版安装包的内置索引比本地缓存新 ⇒ 覆盖。用户升级 App 就是为了拿到
+  //    新片，留着一份旧 `vod-library.json` 会变成「升级了还是搜不到新片」。
+  //  * 内置索引比缓存旧 ⇒ 不覆盖（降级安装 / 同版本重装时不能删用户数据）。
+  //  * 接口地址变了 ⇒ 覆盖（旧缓存里的 id 全指向另一个站）。
+  // 判据只看 `generatedAt` 与 `sourceUrl`，不看条数：站点挂掉会让条数变少，
+  // 但内容可能更新（老片下架、新片上架）。
+  try {
+    final builtinManifest = await loadBuiltinManifest();
+    var cached = await vodLibraryStore.load();
+    if (cached != null && builtinManifest != null) {
+      // 缓存里没有存 sourceUrl，用「缓存来源 id 是否等于内置索引接口推出的 id」
+      // 判断是不是同一个接口 —— 不同就按地址变更处理。
+      final sameInterface =
+          cached.sourceId == ThirdPartyVodService.sourceIdFor(
+              builtinManifest.sourceUrl);
+      final replace = shouldReplaceCache(
+        builtin: builtinManifest,
+        cacheSavedAt: cached.savedAt,
+        cacheSourceUrl:
+            sameInterface ? builtinManifest.sourceUrl : cached.sourceId,
+      );
+      if (replace) {
+        debugPrint('[vod] 内置索引更新（${builtinManifest.generatedAt}）'
+            '覆盖本地缓存（${cached.savedAt}）');
+        await vodLibraryStore.clear();
+        cached = null;
+      }
+    }
+    if (cached != null) {
+      vodLibrary.restore(
+        sourceId: cached.sourceId,
+        items: cached.items,
+        sourceName: cached.sourceName,
+        headers: cached.headers,
+        savedAt: cached.savedAt,
+      );
+      debugPrint('[vod] 恢复本地检索记录 ${cached.records.length} 条 / '
+          '${cached.items.length} 部'
+          '（${cached.savedAt.toIso8601String()}）');
+    }
+  } catch (_) {
+    // 缓存损坏：当作没有。
+  }
+  vodSession = VodSession(
+    service: thirdPartyVod,
+    library: vodLibrary,
+    // 每批入库后落盘（上限 kVodCacheMaxItems = 10000 条），下次冷启动直接命中。
+    persist: () => vodLibraryStore.save(
+      sourceId: vodSession.sourceId.isEmpty
+          ? ThirdPartyVodService.sourceIdFor(kVodDefaultSourceUrl)
+          : vodSession.sourceId,
+      sourceName: vodSession.sourceName,
+      headers: vodLibrary.headers,
+      items: vodLibrary.externalItems,
+    ),
+  );
+  // 1.0.5：默认加载源只在「开关已开 + 选中的就是默认源 + 片库还没有外部条目」
+  // 时自动拉一次（单飞、不重试）。导入成功即装进片库，与设置页手动导入同一路径。
+  final vodAutoSource = VodAutoSource(
+    runner: (url,
+        {required bool allowInsecureHttp,
+        required bool allowExternalCode,
+        void Function(VodImportPartial partial)? onProgress}) async {
+      final result = await vodSession.start(
+        url: url,
+        allowInsecureHttp: allowInsecureHttp,
+        allowExternalCode: allowExternalCode,
+      );
+      onProgress?.call(VodImportPartial(
+        items: vodLibrary.externalItems,
+        loadedSites: 0,
+        failedSites: 0,
+        probedSites: 0,
+        totalSites: result.sites,
+        totalAvailable: result.totalAvailable,
+        done: !result.hasMore,
+      ));
+      return VodImportReport(
+        ok: result.ok,
+        message: result.message,
+        items: vodLibrary.externalItems,
+        sourceId: result.sourceId,
+        sourceName: result.sourceName,
+        headers: vodLibrary.headers,
+        totalAvailable: result.totalAvailable,
+        sitesTotal: result.sites,
+        hasMore: result.hasMore,
+      );
+    },
+  );
+
+  // ── 1.0.5 第十六次修：进入点播时的「索引校验 + 分支加载」 ──────────
+  //
+  // 三条分支（判据全在 vod_index_gate.dart 的纯函数里，这里只接 IO）：
+  //  * 已保存索引含有效片源 + 记录的接口与当前设定一致 ⇒ ready，列表直接用它；
+  //  * 索引缺失 / 接口未设定 / 地址不匹配 ⇒ needAddress，UI 弹输入页；
+  //  * 提交地址后地址一致 ⇒ 直接加载已有索引；否则按地址取片源、生成新目录文件。
+  //
+  // 「各分支加载来源唯一」由 verdict.origin（单值枚举）保证：UI 只从它
+  // 指定的那一份取数，状态离开 ready 就清空列表，绝不把两份索引拼在一起。
+  // 先载一次 manifest：browse() 需要站点/类目字典，输入页要展示这份
+  // 目录记录的接口地址（用户填同一个地址就能跳过重新抓取），而存储层
+  // 也需要它来识别「默认索引地址 ⇒ 永不生成 / 追加本地目录」。
+  final builtinManifestForGate = await vodBuiltin.ensureManifest();
+  final vodBuiltinSourceUrl = builtinManifestForGate?.sourceUrl ?? '';
+
+  // 第二十一次修：每个接口地址一份独立目录文件；默认地址只读随包资产。
+  final vodIndexStore = VodIndexDirectoryStore.at(
+    AppPaths.file(AppPaths.vodIndexFile),
+    defaultSourceUrl: vodBuiltinSourceUrl,
+  );
+
+  // 第二十六次修：`late final` 是为了让 `rebuild` 闭包能反过来把进度报给
+  // 控制器自己（`vodIndexGate.reportBuildProgress`）。闭包只在 submit 时
+  // 才执行，那时变量早已赋值，不存在读到未初始化的情况。
+  late final VodIndexGateController vodIndexGate;
+  vodIndexGate = VodIndexGateController(
+    readSettings: () async {
+      final configured = await vodSourceStore.isConfigured();
+      final s = await vodSourceStore.load();
+      return VodIndexSettings(
+        configured: configured,
+        selectedUrl: s.effectiveUrl,
+        allowInsecureHttp: s.allowInsecureHttp,
+        allowExternalCode: s.allowExternalCode,
+      );
+    },
+    readBuiltin: () async {
+      final m = await vodBuiltin.ensureManifest();
+      if (m == null || m.isEmpty) return null;
+      return VodIndexSnapshot(
+        origin: VodIndexOrigin.builtin,
+        sourceUrl: m.sourceUrl,
+        total: m.total,
+        generatedAt: m.generatedAt,
+      );
+    },
+    // 按**当前设定地址**读它自己的那份目录：换接口后不会把上一任接口的
+    // 目录当成「地址不一致」反复重建，也不会覆盖默认索引记录。
+    readGenerated: () async {
+      final s = await vodSourceStore.load();
+      return vodIndexStore.snapshotFor(s.effectiveUrl);
+    },
+    saveSettings: (url, insecure) async {
+      final cur = await vodSourceStore.load();
+      await vodSourceStore.save(cur.copyWith(
+        enabled: true,
+        selectedUrl: url,
+        allowInsecureHttp: insecure,
+      ));
+    },
+    // 新接口分支：按填写地址重新获取片源，写成与默认目录同构的目录文件。
+    // 沿用同一套处理规则 —— 同 version/sourceUrl/generatedAt/total/按栏目分节，
+    // 同一套地址一致性判据，后续进入点播由 readGenerated 读回直接加载。
+    // 条目来自 VodSession 已取回的**可播片源**（自带剧集地址），点开即播。
+    rebuild: (url, insecure, externalCode) async {
+      // 双保险：填的正是默认索引地址时，闸门本来就会走 loadExisting
+      // （零网络复用默认记录）。走到这里说明随包的默认索引**不可用**
+      // （manifest 读不出来 / 没记录接口地址）—— 必须给一句明确理由，
+      // 不能静默返回成功：那样闸门会重新判成 needAddress 又弹回输入页，
+      // 用户看到的就是对话框一直闪、永远退不出去。
+      if (!vodIndexStore.isIndependentSource(url)) {
+        return '随包默认索引目录不可用（缺失或未记录接口地址），请换一个接口地址';
+      }
+      final result = await vodSession.start(
+        url: url,
+        allowInsecureHttp: insecure,
+        // 尊重用户在设置页的选择，不在这里硬编码 true。
+        allowExternalCode: externalCode,
+        autoBatches: 12,
+        budget: const Duration(seconds: 90),
+        preserveExisting: false,
+        // 第二十六次修：把「翻到第几个站 / 已取多少条」实时推给设置页
+        // 与点播页的进度条。控制器负责在构建结束后丢弃迟到的上报。
+        onProgress: (p) => vodIndexGate.reportBuildProgress(p),
+      );
+      if (!result.ok) {
+        return result.message.isEmpty
+            ? '接口未返回可播放条目'
+            : result.message;
+      }
+      final items = vodLibrary.externalItems;
+      if (items.isEmpty) return '接口没有返回任何可播放片源';
+      // 写进**这个地址自己的**文件，不覆盖其它接口、不碰默认记录。
+      vodIndexGate.reportBuildProgress(VodBuildProgress(
+        stage: VodBuildStage.saving,
+        items: items.length,
+      ));
+      await vodIndexStore.saveFor(
+        url,
+        VodIndexDocument(
+          sourceUrl: url,
+          generatedAt: DateTime.now().toUtc(),
+          items: items,
+        ),
+      );
+      return null;
+    },
+  );
+
+  // ── 1.0.5 第二十一次修：片源索引的定时 / 手动增量更新 ─────────────
+  //
+  // 排查结论：此前**没有**定时更新。`VodAutoSource` 只是「首次进入栏目时
+  // 的一次性装载器」（单飞、不重试、只对默认源生效），`VodBootController`
+  // 只在启动校验跑一次。这里补真正的 24 小时周期更新：每站只取最新一页，
+  // 追加合并去重写进该接口自己的目录文件。
+  //
+  // 第二十三次修：默认接口不再跳过 —— 它的随包索引仍然只读，新片源写进
+  // 它自己的**本地增补**文件（`appendFor` 内部按地址分流），点播页浏览时
+  // 并进列表最前面。用户红标：按钮点了要真的去取一遍。
+  final vodIndexUpdater = VodIndexAutoUpdater(
+    readSettings: () async {
+      final s = await vodSourceStore.load();
+      return VodIndexUpdateSettings(
+        url: s.effectiveUrl,
+        enabled: s.enabled,
+        allowInsecureHttp: s.allowInsecureHttp,
+        allowExternalCode: s.allowExternalCode,
+        // 第二十四次修：周期由设置页选的档位决定（一天…一年），
+        // 这里只透传天数，容错在 `VodUpdateCadence.fromDays()`。
+        updateIntervalDays: s.updateIntervalDays,
+      );
+    },
+    fetchLatest: (s) => fetchLatestVodIndexItems(thirdPartyVod, s),
+    append: (url, items) => vodIndexStore.appendFor(url, items),
+    readLastUpdateAt: () async {
+      final raw = await configStore.loadState(kVodIndexUpdateStateKey);
+      final at = raw?['at'];
+      return at is String ? DateTime.tryParse(at) : null;
+    },
+    writeLastUpdateAt: (t) => configStore.saveState(
+      kVodIndexUpdateStateKey,
+      <String, dynamic>{'at': t.toUtc().toIso8601String()},
+    ),
+    // 让位：启动索引校验与「进入点播」的闸门都还在读目录时不并发写盘。
+    waitForIdle: () async {
+      await vodBoot.settled;
+      await vodIndexGate.settled;
+    },
+  );
+
+  // ── 1.0.5 第十七次修：可见卡片海报 + 目录级筛选条件 ──────────────
+  //
+  // 列表条目来自精简索引（包里没有 `vod_pic`），所以卡片一直只有色块。
+  // 这里沿用「点开详情」同一条 `?ac=detail&ids=` 取数链路，但提前到卡片
+  // 进入视口时执行、按站点分组合并、只取海报地址：不组装可播条目、
+  // 不调 adoptResolved、不改播放链路，列表与点击行为保持原样。
+  BuiltinIndexHit? resolvePosterHit(VodItem item) {
+    // 首选：命中转条目时 `toItem()` 已经把 hit 记在 _byId 里。
+    final direct = vodBuiltin.hitById(item.id);
+    if (direct != null) return direct;
+    final m = vodBuiltin.manifest;
+    if (m == null) return null;
+    // 兜底：生成目录的 id 形如 `sourceId:站点key:vod_id`，
+    // 内置索引的 id 形如 `builtin:站点下标:vod_id`，两种都要能反查站点。
+    final parts = item.id.split(':');
+    if (parts.length < 3) return null;
+    final vodId = parts.last;
+    final sitePart = parts[parts.length - 2];
+    if (vodId.isEmpty || sitePart.isEmpty) return null;
+    var siteIndex = int.tryParse(sitePart);
+    if (siteIndex == null || siteIndex < 0 || siteIndex >= m.sites.length) {
+      siteIndex = null;
+      for (var i = 0; i < m.sites.length; i++) {
+        if (m.sites[i].key == sitePart) {
+          siteIndex = i;
+          break;
+        }
+      }
+    }
+    if (siteIndex == null) return null;
+    return BuiltinIndexHit(
+      siteIndex: siteIndex,
+      vodId: vodId,
+      typeId: '',
+      name: item.title,
+      section: item.section.name,
+    );
+  }
+
+  Future<VodPosterBatch> fetchPosters(List<BuiltinIndexHit> hits) async {
+    final manifest = await vodBuiltin.ensureManifest();
+    if (manifest == null) return const VodPosterBatch();
+    final bySite = <int, List<BuiltinIndexHit>>{};
+    for (final h in hits) {
+      if (h.siteIndex < 0 || h.siteIndex >= manifest.sites.length) continue;
+      (bySite[h.siteIndex] ??= <BuiltinIndexHit>[]).add(h);
+    }
+    final out = <String, String>{};
+    final failed = <String>{};
+
+    Future<void> runSite(int siteIndex, List<BuiltinIndexHit> group) async {
+      final site = manifest.sites[siteIndex];
+      final cms = CmsSite(key: site.key, name: site.name, api: site.api);
+      // 1.0.5 十九次修：**4 连一批**（原 10 连）。`?ac=detail&ids=` 单条
+      // 带 `vod_play_url` 约 17 KB，10 连就是 ~170 KB；实测同一批这种请求
+      // 2.3 s 与 24 s 都出现过（dyttzy / bfzy 都会）。8 s 超时 + 10 连的
+      // 结果就是「大批海报判死 → 满屏色块」。4 连把单次体积压到 ~70 KB，
+      // 超时也给到 12 s，弱网下命中率明显回升。
+      const chunkSize = 4;
+      final futures = <Future<void>>[];
+      for (var start = 0; start < group.length; start += chunkSize) {
+        final end = start + chunkSize > group.length
+            ? group.length
+            : start + chunkSize;
+        final chunk = group.sublist(start, end);
+        futures.add(() async {
+          try {
+            final res = await fetchSourceConfigUrl(
+              cms.detailUrl(<String>[for (final h in chunk) h.vodId]),
+              // 与回源详情同一口径：索引里的站点地址是打包时固化的，
+              // 不是用户输入，明文 http 无条件放行；不走系统代理。
+              allowInsecureHttp: true,
+              useSystemProxy: false,
+              timeout: const Duration(seconds: 12),
+              rejectHtml: true,
+            );
+            if (!res.ok || res.text == null) {
+              for (final h in chunk) {
+                failed.add(h.id);
+              }
+              return;
+            }
+            final details =
+                await parseCmsDetailsAsync(res.text!, baseUrl: site.api);
+            for (final h in chunk) {
+              final poster = details[h.vodId]?.poster ?? '';
+              // 按 hit.id（含站点下标）回填：各站 vod_id 都从 1 开始，
+              // 只按 vod_id 映射会把 A 站的海报贴到 B 站的片子上。
+              if (poster.isNotEmpty) {
+                out[h.id] = poster;
+              }
+              // 解析成功但这条没有图 = 该站确实没给海报，不进 failed（不重试）。
+            }
+          } catch (_) {
+            // 单批失败只标记本批，不影响别的站点 / 别的批次，也不抛给 UI。
+            for (final h in chunk) {
+              failed.add(h.id);
+            }
+          }
+        }());
+      }
+      // 同一站点的多批并发（原来串行：8 张卡分属 8 个站时最坏要排队 8 次）。
+      await Future.wait(futures);
+    }
+
+    await Future.wait([
+      for (final entry in bySite.entries) runSite(entry.key, entry.value),
+    ]);
+    return VodPosterBatch(urls: out, failed: failed);
+  }
+
+  final vodPosters = VodPosterService(
+    fetchMany: fetchPosters,
+    resolveHit: resolvePosterHit,
+  );
+  final vodFacetDirectory = VodFacetDirectory();
 
   // 直播选源：读回上次测出来的线路质量（越快越稳的源排越前），
   // 并在每次换线/起播后写回。读不到就是「所有线路等价」，不影响开播。
@@ -477,6 +1003,19 @@ Future<void> main() async {
     channelStore: channelStore,
     networkWatch: networkWatch,
     sourceTrust: trust,
+    vodSourceStore: vodSourceStore,
+    vodLibrary: vodLibrary,
+    thirdPartyVod: thirdPartyVod,
+    vodAutoSource: vodAutoSource,
+    vodSession: vodSession,
+    vodBoot: vodBoot,
+    vodBuiltin: vodBuiltin,
+    vodIndexGate: vodIndexGate,
+    vodIndexStore: vodIndexStore,
+    vodIndexUpdater: vodIndexUpdater,
+    vodBuiltinSourceUrl: vodBuiltinSourceUrl,
+    vodPosters: vodPosters,
+    vodFacetDirectory: vodFacetDirectory,
   );
 
   runApp(MaterialApp(
@@ -506,6 +1045,25 @@ Future<void> main() async {
   WidgetsBinding.instance.addPostFrameCallback((_) {
     StartupTrace.markFirstFrame();
     debugPrint('[startup] ${StartupTrace.summary()}');
+    // 启动校验放在**首帧之后**跑：它要读 manifest + 6 个分片的头，虽然本地
+    // 读完只要几十毫秒，但一旦判定「不一致」就会触发网络同步（几秒到几十秒）。
+    // 放在 `runApp` 之前会把首帧钉住，放这里则首帧先出、状态在栏目页逐条刷新。
+    unawaited(vodBoot
+        .boot(
+          selectedUrl: vodBootSelectedUrl,
+          builtinSourceUrl: '',
+          // 用户没开外部地址时**不联网**：默认就是要「内置索引直接用」，
+          // 此时 syncNetwork 会立刻返回「外部地址未启用」，
+          // 状态落到 fallbackBuiltin（明示「未联网校验，可能不是最新」）。
+          allowSync: vodAddressSettings.enabled,
+        )
+        .then((phase) {
+      debugPrint('[vod] 启动索引状态 ${phase.name}：${vodBoot.note}');
+      // 启动索引校验完成后再挂 24 小时定时更新：避免和启动期读同一份
+      // 目录文件时并发写盘。首帧后的这一次会先看「距上次成功是否满 24h」，
+      // 未满就直接跳过，不会每天冷启动都去抓一遍。
+      vodIndexUpdater.start();
+    }));
   });
 }
 

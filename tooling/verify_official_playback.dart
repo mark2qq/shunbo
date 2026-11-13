@@ -94,6 +94,14 @@ class _FakePlayer implements PlayerController, PictureProbe, DecodeFaultSource {
   @override
   bool get hasPicture => _loaded != null;
 
+  // 1.0.5 第九次修：PictureProbe 补了实测分辨率（控制栏的清晰度徽标读它）。
+  // 假内核给 1920×1080 —— 断言要能区分「画了 1080P」和「没画面时显示自动」。
+  @override
+  int get pictureWidth => _loaded == null ? 0 : 1920;
+
+  @override
+  int get pictureHeight => _loaded == null ? 0 : 1080;
+
   @override
   int get pictureEpoch => _epoch;
 

@@ -395,19 +395,19 @@ void testTvInstallCompat() {
           g.contains('errorMinSdkVersion = 23'));
 
   final pub = File('pubspec.yaml').readAsStringSync();
-  check('R12 版本号为 1.0.4',
-      RegExp(r'^version:\s*1\.0\.4\+\d+\s*$', multiLine: true).hasMatch(pub));
-  check('R12 versionCode 升到 +5（1.0.3 可覆盖升级，回退需先卸载）',
-      RegExp(r'^version:\s*1\.0\.4\+5\s*$', multiLine: true).hasMatch(pub));
+  check('R12 版本号为 1.0.6',
+      RegExp(r'^version:\s*1\.0\.6\+\d+\s*$', multiLine: true).hasMatch(pub));
+  check('R12 versionCode 升到 +7（1.0.5 可覆盖升级，回退需先卸载）',
+      RegExp(r'^version:\s*1\.0\.6\+7\s*$', multiLine: true).hasMatch(pub));
 
   // 「对外行为/调用方式」不变：平台通道兜底版本、安装器版本必须同源。
   final sys = File('lib/platform/system_channel.dart').readAsStringSync();
   check('R12 平台通道兜底版本与 pubspec 一致（设置页不显示旧版本）',
-      sys.contains("kAppVersionName = '1.0.4'") &&
-          RegExp(r'kAppVersionCode\s*=\s*5\s*;').hasMatch(sys));
+      sys.contains("kAppVersionName = '1.0.6'") &&
+          RegExp(r'kAppVersionCode\s*=\s*7\s*;').hasMatch(sys));
   final iss = File('tooling/windows_installer.iss').readAsStringSync();
   check('R12 安装器版本与 pubspec 一致',
-      iss.contains('#define AppVersion "1.0.4"'));
+      iss.contains('#define AppVersion "1.0.6"'));
 
   // 参考实现的清单约定本工程已具备，本轮**无需改清单**；锁住它们防止被改坏。
   final m = File('android/app/src/main/AndroidManifest.xml').readAsStringSync();

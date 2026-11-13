@@ -74,6 +74,13 @@ class _ChannelNumberInputState extends State<ChannelNumberInput> {
 
   bool _onKey(KeyEvent event) {
     if (!widget.enabled || !mounted) return false;
+    // 文本输入框有焦点时一律放行。
+    //
+    // 这是个**全局** HardwareKeyboard 钩子，抢在焦点树之前拿到按键；
+    // 检索框里输「2020」这类年份时必须原样进输入框，不能被当成频道号
+    // 累积、更不能提交成一次切台。直播页目前没有输入框，但设置页、
+    // 检索框、将来的任何 TextField 都靠这一条兜住。
+    if (_editingText) return false;
     // 只处理按下事件：长按的重复事件（KeyRepeatEvent）会把 1 打成 11。
     if (event is! KeyDownEvent) return false;
     final key = event.logicalKey;
@@ -108,6 +115,17 @@ class _ChannelNumberInputState extends State<ChannelNumberInput> {
       return true;
     }
     return false;
+  }
+
+  /// 当前焦点是否落在文本输入控件上。
+  ///
+  /// [EditableText] 内部的 `Focus` 节点就是 `primaryFocus`，往上找一层即可
+  /// 确认是输入框；`TextField` / `TextFormField` 最终都渲染成它。
+  bool get _editingText {
+    final ctx = FocusManager.instance.primaryFocus?.context;
+    if (ctx == null) return false;
+    if (ctx.widget is EditableText) return true;
+    return ctx.findAncestorWidgetOfExactType<EditableText>() != null;
   }
 
   /// 数字键 → 数字值（同时认主键区与小键盘）。

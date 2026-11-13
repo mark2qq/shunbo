@@ -1,27 +1,41 @@
 import 'package:flutter/services.dart';
 
+import '../platform/window_channel.dart';
 import 'form_factor.dart';
 import 'screen_policy.dart';
 
-/// 屏幕方向与系统栏策略（R4）。
+/// 屏幕方向、系统栏与窗口全屏策略（R4）。
 ///
-/// 规则**集中在一处**：由 [resolveScreenPolicy] 纯函数决定，这里只负责下发。
+/// 规则**集中在一处**：方向由 [resolveScreenPolicy] 纯函数决定，这里只负责下发。
 ///
 /// * 电视形态：锁横屏 + 隐藏系统栏（全屏沉浸），始终如此；
 /// * 手机形态：默认**不锁方向**，横竖屏都跟随系统；只有用户主动进入
 ///   「全屏」时才锁横屏，退出即恢复可旋转；
-/// * 桌面端：不干预（窗口由用户自己调）。
+/// * 桌面端（Windows）：方向不归框架管，但**全屏必须落到窗口本身**
+///   —— 无边框 + 覆盖显示器 + 隐藏任务栏，见 [WindowChannel]。
 ///
 /// 2026-11 修正：旧实现「手机 + 正在播放 → 锁横屏」，等于一开播就把整个
 /// 界面钉死在横屏，竖屏被系统拒绝，用户没有任何入口转回来（全屏按钮在
 /// 手机上本来就是个无效果的开关）。现在「播放」不再是锁方向的理由。
 ///
+/// 2026-11 补充：旧实现对桌面端 `return` 得太早，Windows 上点全屏只让
+/// 内容区变大一点，任务栏照样压着画面 —— 用户报的「不是真全屏」就是这里。
+///
 /// 只在「形态 / 是否全屏」发生变化时调用，不要在 build 里调：
 /// `SystemChrome` 每次调用都会跨通道发一次消息，逐帧调用会让列表滚动抖动。
 class DisplayMode {
-  const DisplayMode({required this.onAndroid});
+  const DisplayMode({
+    required this.onAndroid,
+    this.isDesktop = false,
+    WindowChannel window = const WindowChannel(),
+  }) : _window = window;
 
   final bool onAndroid;
+
+  /// 桌面端（Windows/macOS/Linux）：方向不接管，但窗口全屏要真的下发。
+  final bool isDesktop;
+
+  final WindowChannel _window;
 
   /// 记录上一次应用的策略，避免重复下发同一条 SystemChrome 消息。
   static String? _applied;
@@ -30,8 +44,17 @@ class DisplayMode {
     required DeviceForm form,
     required bool fullscreen,
   }) async {
-    // 桌面端：框架不接管窗口尺寸与装饰，也不该被锁方向。
-    // 顺带兜住「不支持方向控制」的平台（如浏览器）：不调用就不会抛
+    // 桌面端：框架不接管窗口尺寸与装饰，也不该被锁方向；
+    // 但「全屏」这件事必须交给 runner 改窗口本身，否则任务栏永远压着画面。
+    if (isDesktop) {
+      final key = 'desktop|$fullscreen';
+      if (key == _applied) return;
+      _applied = key;
+      await _window.setFullscreen(fullscreen);
+      return;
+    }
+
+    // 兜住「不支持方向控制」的平台（如浏览器）：不调用就不会抛
     // MissingPluginException。
     if (!onAndroid) return;
 
@@ -67,8 +90,12 @@ class DisplayMode {
   }
 
   /// 退出应用前恢复默认，避免「退出播放器后整个桌面被锁成横屏」。
+  ///
+  /// 桌面端同时把窗口装饰还回去：留着无边框全屏窗口再退出，下一个进程
+  /// 拿到的窗口位置/尺寸会是全屏矩形，看起来像「启动就卡在全屏」。
   static Future<void> restore() async {
     _applied = null;
+    await const WindowChannel().setFullscreen(false);
     await SystemChrome.setPreferredOrientations(const <DeviceOrientation>[]);
     await SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
   }

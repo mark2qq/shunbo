@@ -741,6 +741,10 @@ class _LivePageState extends State<LivePage> {
     final stage = PlayerStage(
       player: widget.player,
       fit: _fit,
+      // 切到点播栏目后必须把渲染面从树上摘掉（1.0.5 直播串台）：
+      // 页面在 IndexedStack 里保活，仅仅「不绘制」不足以让 Android 的
+      // PlatformView / 桌面纹理消失，直播末帧会留在点播页上。
+      attachSurface: widget.active,
       // 直播舞台一律铺满父级有界区域。旧的固定 16:9 在宽屏/手机横屏的
       // 松散约束下会左对齐收缩，右侧由外层黑底填满 —— 就是那块黑空白。
       // 视频比例交给渲染面的 fit（适应/铺满/拉伸）处理，不再由舞台决定。
@@ -754,6 +758,10 @@ class _LivePageState extends State<LivePage> {
       // 与控制条同一层级，实测可见。
       overlay: ChannelNumberInput(
         controller: widget.controller,
+        // 只有本页处于激活状态才收数字键。六个栏目页在 IndexedStack 里保活，
+        // 这个组件是**全局** HardwareKeyboard 钩子；不跟着 active 关掉的话，
+        // 用户在点播页的检索框里输「2020」会被它当成频道号吃掉。
+        enabled: widget.active,
         child: PlayerControlsOverlay(
           controller: c,
           player: widget.player,
@@ -904,9 +912,10 @@ class _LivePageState extends State<LivePage> {
 
     return Container(
       decoration: BoxDecoration(
-        // 浮层态半透明（0.78）：能透出背后还在播的画面，不再像一块死黑面板
-        // 盖死视频；常驻双栏态则完全不透明，让右侧成为一块有内容的实区。
-        color: opaque ? AppTheme.surface : AppTheme.surface.withValues(alpha: 0.78),
+        // 浮层态半透明（0.78，见 `AppTheme.panelScrim`）：能透出背后还在播的画面，
+        // 不再像一块死黑面板盖死视频；常驻双栏态则完全不透明，让右侧成为一块有内容的实区。
+        // 左侧导航栏用的是同一个值，两侧底色因此不会各走一路。
+        color: opaque ? AppTheme.surface : AppTheme.panelScrim,
         border: const Border(
           left: BorderSide(color: AppTheme.divider, width: 1),
         ),

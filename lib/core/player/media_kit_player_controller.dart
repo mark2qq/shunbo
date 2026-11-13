@@ -26,7 +26,13 @@ import 'player_controller.dart';
 /// - `currentRawSeconds()` 读不到位置时返回 0，不抛异常（进度上报自己会判无效值）；
 /// - `duration()` 对直播流 / 尚未解析出时长的情况返回 0，片尾判定因此自动跳过。
 class MediaKitPlayerController
-    implements PlayerController, PictureProbe, DecodeFaultSource {
+    implements
+        PlayerController,
+        PictureProbe,
+        BufferProbe,
+        PlaybackRateControl,
+        DecodeFaultSource,
+        PlaybackTuner {
   late final Player _player;
   VideoController? _video;
   bool _initialized = false;
@@ -71,6 +77,41 @@ class MediaKitPlayerController
     if (!_initialized) return false;
     final s = _player.state;
     return (s.width ?? 0) > 0 && (s.height ?? 0) > 0;
+  }
+
+  /// 实测画面宽度。清晰度徽标读它，读不到就显示「自动」而不是编一个档名。
+  @override
+  int get pictureWidth => _initialized ? (_player.state.width ?? 0) : 0;
+
+  /// 实测画面高度。
+  @override
+  int get pictureHeight => _initialized ? (_player.state.height ?? 0) : 0;
+
+  /// 已缓冲到的秒数。
+  ///
+  /// `media_kit` 的 `state.buffer` 是**解复用后已入队**的位置（库里叫
+  /// `demuxer cache`），恰好对应「用户能立刻拖到、不必等网络」的那一段，
+  /// 正是进度条中间那段缓冲轨该画的东西。
+  ///
+  /// 未初始化 / 未载入时返回 0（此时整段不画），不抛异常。
+  @override
+  double get bufferedSeconds {
+    if (!_initialized) return 0;
+    final ms = _player.state.buffer.inMilliseconds;
+    return ms <= 0 ? 0 : ms / 1000.0;
+  }
+
+  /// 当前倍速。
+  @override
+  double get rate => _initialized ? _player.state.rate : 1.0;
+
+  /// 设置倍速。夹到 0.25–4.0：低于 0.25 解码器基本不出帧，高于 4.0 音轨
+  /// 会开始丢样本（这两条是 libmpv 的既定行为，不是本项目的取舍）。
+  @override
+  Future<void> setRate(double rate) async {
+    if (!_initialized) return;
+    final r = rate.isFinite ? rate.clamp(0.25, 4.0) : 1.0;
+    await _player.setRate(r);
   }
 
   @override
@@ -256,34 +297,107 @@ class MediaKitPlayerController
     }
   }
 
-  /// 直播起播参数：把「前沿缓冲」从点播默认压到直播友好的量级。
+  /// 直播档参数：把「前沿缓冲」压到直播友好的量级。
   ///
   /// * `cache-secs` 10s → 6s：直播回看窗口没意义，6s 足够抗常规抖动，
   ///   少缓冲的数据量直接换成更早的首帧。
   /// * `demuxer-readahead-secs` → 4s：起播阶段只预读 4 秒就开始出帧。
+  /// * `cache-pause` no：直播不允许「先攒够再开画」，那会凭空多等几秒。
+  /// * `demuxer-lavf-o` 清空：把点播档加的断线重连参数撤掉，
+  ///   保证看完电影切回直播时参数与 1.0.4 逐项一致。
   ///
   /// 刻意**不动** `bufferSize`（demuxer-max-bytes，24MB）：那是内存回归
   /// （KernelTradeoffModel 校准过的平衡解），4K 高码率下把它压小会引发
   /// 播放中卡顿——起播优化不能拿播放稳定性换。
-  ///
-  /// 同样走 dynamic setProperty：参数不被某个内核版本接受时静默回落默认值，
-  /// 绝不让播放初始化失败。
   Future<void> _applyLiveStartTuning() async {
-    const entries = <String, String>{
-      'cache-secs': '6',
-      'demuxer-readahead-secs': '4',
-    };
+    if (!_initialized) return;
+    _vodProfile = false;
+    await _applyMpvOptions(_liveProfileOptions, '直播档');
+  }
+
+  /// 点播档参数（1.0.5 第四次修：修「能播但一直卡」）。
+  ///
+  /// 起因：1.0.4 只有一套直播档参数，点播也在用。直播档的前沿缓存只有 6 秒，
+  /// 而采集站的 m3u8 上游本身就是转推的弱源，抖动一来 6 秒缓存就见底，
+  /// 表现为「播几秒停一下」。点播与直播诉求相反：多缓冲 1 秒完全可接受，
+  /// 卡顿不可接受，所以单独给一套大缓存档。
+  ///
+  /// 每一项都只影响**缓冲与重连**，不碰解码器、不碰同步策略 —— 这两类改动
+  /// 才会改变画面/音画关系，属于「没实测就不许动」的范围。
+  Future<void> applyVodProfile() async {
+    if (!_initialized) return;
+    // 幂等：已经在点播档就什么都不做。连播下一集、切集都会走这条路径，
+    // 而 mpv 的 `cache-secs` / `demuxer-readahead-secs` 是**播放器级**的全局
+    // 属性，`open` 新文件不会把它们重置回默认值 —— 重复设置纯属白花 IPC。
+    if (_vodProfile) return;
+    _vodProfile = true;
+    await _applyMpvOptions(_vodProfileOptions, '点播档');
+  }
+
+  @override
+  Future<void> applyLiveProfile() async {
+    if (!_initialized) return;
+    await _applyLiveStartTuning();
+  }
+
+  /// 当前缓冲档（`live` / `vod`）。诊断与回归读它，确认档位真的切过去了。
+  String get playbackProfile => _vodProfile ? 'vod' : 'live';
+
+  bool _vodProfile = false;
+
+  static const Map<String, String> _liveProfileOptions = <String, String>{
+    'cache-secs': '6',
+    'demuxer-readahead-secs': '4',
+    'cache-pause': 'no',
+    'demuxer-lavf-o': '',
+  };
+
+  static const Map<String, String> _vodProfileOptions = <String, String>{
+    // 30 秒缓存：点播怕的不是多缓冲，是缓冲见底。
+    'cache-secs': '30',
+    // 1.0.5 第八次修：15 → 6。
+    //
+    // 15 秒的目标预读让 demuxer 线程在起播阶段就去抢 15 秒的数据，而首帧
+    // 解码要用同一条连接 —— 弱源上两者抢带宽，首帧反而更晚出现。改成 6 秒：
+    // 起播只要攒够 6 秒就能开画，之后 `cache-secs 30` 会在播放中继续把缓存填满，
+    // **抗抖能力一点没减**（抗抖靠的是 cache-secs + demuxer-max-bytes，
+    // 不是 readahead 的起手量）。
+    'demuxer-readahead-secs': '6',
+    // 起播先攒够再开画：源站起播阶段最抖，直接开画就是「出画面→卡住转圈」。
+    'cache-pause': 'yes',
+    // 1.0.5 第八次修：2 → 1。攒 1 秒就够挡住起播抖动，多等的 1 秒纯粹是延迟。
+    'cache-pause-wait': '1',
+    // 源站掐断长连接非常常见，不开重连会被当成 EOF 直接结束播放。
+    'demuxer-lavf-o': 'reconnect=1,reconnect_streamed=1,reconnect_delay_max=5',
+    // 1.0.5 第八次修：mpv 默认网络超时 60 秒。弱源挂死时用户要干等一分钟
+    // 才等到报错，期间画面就是冻住不动 —— 看起来像「卡死」而不是「断流」。
+    // 10 秒能更早把控制权交给上面的重连 / 换源逻辑。
+    'network-timeout': '10',
+  };
+
+  /// 一次性把一组 mpv 属性打进去。
+  ///
+  /// 1.0.5 第八次修：从「for 循环逐个 await」改成**并发**。
+  /// 每个 `setProperty` 都是一次 Dart→native 的同步 IPC（Windows 上走 FFI、
+  /// Android 上走 JNI），串行 5 次就是 5 个来回；点播每次起播都会调一次，
+  /// 叠在「点开视频」这段最敏感的等待上。这些属性互相之间没有顺序依赖
+  /// （都是独立的播放器状态），并发打进去语义完全等价，失败仍然逐项隔离。
+  Future<void> _applyMpvOptions(
+      Map<String, String> entries, String tag) async {
     try {
       final dynamic native = _player.platform;
-      for (final entry in entries.entries) {
-        try {
-          await native.setProperty(entry.key, entry.value);
-        } catch (e) {
-          debugPrint('[mpv] 起播参数 ${entry.key} 未生效（回默认值）：$e');
-        }
-      }
+      await Future.wait<void>([
+        for (final entry in entries.entries)
+          () async {
+            try {
+              await native.setProperty(entry.key, entry.value);
+            } catch (e) {
+              debugPrint('[mpv] $tag ${entry.key} 未生效（回默认值）：$e');
+            }
+          }(),
+      ]);
     } catch (e) {
-      debugPrint('[mpv] 起播调优不可用：$e');
+      debugPrint('[mpv] $tag 不可用：$e');
     }
   }
 

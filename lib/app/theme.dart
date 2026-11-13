@@ -27,6 +27,15 @@ abstract final class AppTheme {
   /// 圆角基准，避免各页面各写一套。
   static const double radius = 10;
 
+  /// 浮层侧栏的底色：`surface` 压到 **78%** 不透明（22% 透出背后的画面）。
+  ///
+  /// **左右两侧栏必须同色同透明度**：右侧频道栏（浮层态）一直用这个值，
+  /// 左侧导航栏最初是一整块实心 `surface`，1.0.5 先改成全透明 ——
+  /// 结果是导航文字直接压在亮画面上、看不清，才收敛到这里。
+  ///
+  /// 两处各写一份 `withValues(alpha: 0.78)` 是它们走岔的老路，所以只留这一个出口。
+  static Color get panelScrim => surface.withValues(alpha: 0.78);
+
   static ThemeData build() {
     const scheme = ColorScheme.dark(
       primary: accent,

@@ -54,6 +54,7 @@ class PlayerStage extends StatelessWidget {
     this.fit = BoxFit.contain,
     this.scrimAlpha = 0.45,
     this.fill = false,
+    this.attachSurface = true,
   });
 
   final PlayerController player;
@@ -82,15 +83,31 @@ class PlayerStage extends StatelessWidget {
   /// 默认 false，保持点播页「Column 里自然得出 16:9 高度」的旧行为。
   final bool fill;
 
+  /// 是否真的把内核渲染面挂到树上。
+  ///
+  /// **为什么必须有这个开关**（1.0.5 直播串台事故的根因）：
+  /// 直播页与三个点播页放在同一个 `IndexedStack` 里保活，非当前页只是**不绘制**；
+  /// 但视频面不是普通 Flutter 组件 ——
+  ///  * Android 是 `PlatformView`（TextureView 混入合成），它的原生视图在
+  ///    不绘制时仍可能留在视图层级里继续显示最后一帧；
+  ///  * 桌面是 media_kit 的纹理，内核在停播后也保留末帧。
+  /// 于是「从直播切到电视剧」时，直播画面就停在了点播页面上。
+  /// 把渲染面从树上摘掉是唯一对两个平台都成立的隔离手段。
+  final bool attachSurface;
+
   @override
   Widget build(BuildContext context) {
-    final surface = buildVideoSurface(player, fit: fit);
+    final surface = attachSurface ? buildVideoSurface(player, fit: fit) : null;
     final Widget content = DecoratedBox(
       decoration: BoxDecoration(color: background),
       child: Stack(
         fit: StackFit.expand,
         children: [
-          if (surface != null)
+          if (!attachSurface)
+            // 页面不在前台：挂一块纯黑，既不留上一路画面的残帧，
+            // 也不会误报「演示内核无画面」。
+            const ColoredBox(color: Colors.black)
+          else if (surface != null)
             // 直接铺满：舞台已给出确定尺寸，再套一层 FittedBox 只会在窗口
             // 尺寸变化时多做一次无谓的缩放。
             surface

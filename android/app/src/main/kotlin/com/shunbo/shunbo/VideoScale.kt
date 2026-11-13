@@ -106,6 +106,10 @@ class VideoScaleController {
      * 不会出现「矩阵算错导致黑屏」。
      */
     fun apply(view: TextureView) {
+        // 已脱离窗口（PlatformView 正在销毁、或 Flutter 刚摘掉渲染面）时
+        // 直接放弃：`setTransform` 会走 native SurfaceTexture 层，对已销毁的
+        // 视图调用会 ANR 甚至崩溃。这是 `dispose` 之外的最后一道闸。
+        if (!view.isAttachedToWindow) return
         val vw = view.width
         val vh = view.height
         val w = videoWidth

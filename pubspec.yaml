@@ -1,7 +1,7 @@
 name: shunbo
 description: 顺播 (shunbo) 跨端视频播放软件 — Flutter + libmpv
 publish_to: 'none'
-version: 1.0.4+5
+version: 1.0.6+7
 
 environment:
   sdk: '>=3.4.0 <4.0.0'
@@ -35,3 +35,17 @@ flutter:
   # 必须显式打开：不开这一项，MaterialIcons-Regular.otf 不会被打进产物，
   # 所有 Icon 在真机上会渲染成「方框」。此前 MVP 界面几乎不用图标，这个坑一直没暴露。
   uses-material-design: true
+
+  # 安装包内置的点播检索索引（1.0.5 第十三次修 · 第 1 项）。
+  #
+  # 目录由 `python tooling/pack_vod_index.py` 生成，按栏目分片
+  # （movies / series / documentaries / shortVideo / anime / other），
+  # 每片一个 `.tsv.gz` + 一份 `manifest.json`。
+  #
+  # 只内置**检索元数据**（站点 + vod_id + type_id + 片名），不含播放地址：
+  # 完整目录（`?ac=detail` 全量）约 21 GB，装不进任何安装包；
+  # 播放地址在用户点开某部片时用 `?ac=detail&ids=` 回源取。
+  #
+  # 整个目录一起声明（而不是逐个文件），这样重新打包索引后不必再改 pubspec。
+  assets:
+    - assets/vod_index/

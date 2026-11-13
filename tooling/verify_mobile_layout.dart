@@ -31,6 +31,37 @@ void check(String name, bool ok, [String? detail]) {
 String _src(String path) =>
     File(path).readAsStringSync().replaceAll('\r\n', '\n');
 
+/// 判断 [a] 是否**每一次**出现都在 [b] 之前，用于锁住「先解绑后释放」这类
+/// 顺序敏感的销毁逻辑（顺序反了就是 native 崩溃，且编译器不会报错）。
+///
+/// 语义是「配对」而不是「全体比较」：源码里通常有两处销毁路径
+/// （`onSurfaceTextureDestroyed` 与 `dispose`），各自成对，整体序列是
+/// `a b a b`。所以这里按出现顺序扫描，要求每个 `b` 都能就近配到一个尚未
+/// 配对的 `a` —— 只要出现一个「前面没有 a 的 b」就判失败。
+///
+/// 返回 1 = 全部合规；0 = [a] 完全没出现；-1 = 存在 `b` 早于 `a` 的位置。
+int _orderOf(String source, String a, String b) {
+  final marks = <(int, bool)>[]; // (位置, 是否为 a)
+  for (var i = source.indexOf(a); i >= 0; i = source.indexOf(a, i + a.length)) {
+    marks.add((i, true));
+  }
+  for (var i = source.indexOf(b); i >= 0; i = source.indexOf(b, i + b.length)) {
+    marks.add((i, false));
+  }
+  if (!marks.any((m) => m.$2)) return 0;
+  marks.sort((x, y) => x.$1.compareTo(y.$1));
+  var pending = 0;
+  for (final m in marks) {
+    if (m.$2) {
+      pending++;
+    } else {
+      if (pending == 0) return -1;
+      pending--;
+    }
+  }
+  return 1;
+}
+
 /// 常见手机的**逻辑像素**（Flutter 的 `MediaQuery.size`），竖 / 横各一次。
 ///
 /// 用真实机型而不是随便取的整数：断点判断（900）与比例约束的边界
@@ -85,8 +116,20 @@ void testScreenPolicy() {
   final display = _src('lib/app/display_mode.dart');
   check('下发层不再以「是否播放」决定方向', !display.contains('playing'));
   check('下发层调用纯策略函数', display.contains('resolveScreenPolicy('));
-  check('下发层对非 Android 直接跳过（浏览器/桌面不会抛异常）',
-      display.contains('if (!onAndroid) return;'));
+  // 桌面端不能像旧实现那样**先**被 `if (!onAndroid) return;` 拦掉：那样
+  // Windows 上点全屏只让内容区变大一点，任务栏照样压着画面（用户报的
+  // 「不是真全屏」）。顺序是关键——桌面分支必须在 Android 守卫之前。
+  final desktopIdx = display.indexOf('if (isDesktop) {');
+  final androidIdx = display.indexOf('if (!onAndroid) return;');
+  check('桌面端分支存在且排在 Android 守卫之前（否则全屏仍被丢弃）',
+      desktopIdx >= 0 && androidIdx > desktopIdx);
+  check('桌面端把全屏真正下发到窗口层',
+      RegExp(r'if \(isDesktop\) \{[\s\S]{0,400}?_window\.setFullscreen\(fullscreen\);')
+          .hasMatch(display));
+  check('桌面端与 Android 两路互斥（不会互相覆盖去重键）',
+      display.contains("final key = 'desktop|") &&
+          display.contains("final key = '\${form.name}|\${policy.name}'"));
+  check('浏览器等无方向能力平台仍安全跳过', androidIdx >= 0);
   check('竖屏恢复时四个方向全部允许',
       display.contains('DeviceOrientation.portraitUp') &&
           display.contains('DeviceOrientation.portraitDown'));
@@ -97,8 +140,32 @@ void testScreenPolicy() {
   check('切换全屏后立即重算方向',
       RegExp(r'void _toggleFullscreen\(\) \{[\s\S]*?_applyDisplayMode\(\);')
           .hasMatch(shell));
-  check('窄屏全屏也隐藏 AppBar 与底部导航',
-      RegExp(r'if \(_fullscreen\) return Scaffold\(body: content\);').hasMatch(shell));
+  // 全屏切换**不许改变 Widget 树形**：同一位置父类型从 Stack 变成 IndexedStack
+  // 会让 Flutter 无法复用 Element，整棵子树 unmount → 页面 State 重建 →
+  // 点播页退回上一级（1.0.5 用户报的「点全屏就回退」就是这个）。
+  //
+  // 断言必须按**行首**匹配：文档注释里引用了这句旧写法做反面示例，
+  // 用 `contains` 会把自己写的注释当成代码命中（假阴性）。
+  check('全屏不再另起一棵树（旧写法已从代码中删除）',
+      !RegExp(r'^\s*if \(_fullscreen\) return Scaffold\(body: content\);',
+              multiLine: true)
+          .hasMatch(shell));
+  check('宽屏全屏只条件渲染侧栏，content 恒为 Stack 第 0 个孩子',
+      RegExp(r'Positioned\.fill\(child: content\),\s*\n\s*//')
+              .hasMatch(shell) &&
+          shell.contains('if (!_fullscreen)'));
+  check('窄屏全屏只把 appBar / bottomNavigationBar 传 null（槽位不变）',
+      RegExp(r'appBar: _fullscreen\s*\n?\s*\? null').hasMatch(shell) &&
+          RegExp(r'bottomNavigationBar: _fullscreen\s*\n?\s*\? null')
+              .hasMatch(shell));
+  check('返回键退全屏后同步收回系统栏/窗口装饰',
+      RegExp(r'if \(!_fullscreen\) return;\s*\n(?:\s*//.*\n)*\s*setState\(\(\) => _fullscreen = false\);\s*\n\s*_applyDisplayMode\(\);')
+          .hasMatch(shell));
+  // 直播页本身不处理键盘，全屏出口必须由外壳兜住（遥控器/纯键盘用户）。
+  check('外壳挂全局键盘兜底，直播页全屏可用 Esc/F 退出',
+      shell.contains('HardwareKeyboard.instance.addHandler(_onGlobalKey)') &&
+          shell.contains('HardwareKeyboard.instance.removeHandler(_onGlobalKey)') &&
+          shell.contains('_section != AppSection.live'));
 }
 
 // ── B. 布局决策 ───────────────────────────────────────────────
@@ -275,6 +342,25 @@ void testVideoScaleModes() {
 
   // ⑤ 通道双向同名。
   check('原生注册缩放通道', kotlinMain.contains('SCALE_CHANNEL = "shunbo/player_view/scale"'));
+
+  // ⑥ Surface 释放时序：播放中点返回会闪退，根因是「先 release 后解绑」。
+  //
+  // Surface 三方共持（PlayerSurface / MpvMethodHandler.surface / ExoPlayerEngine），
+  // 旧代码 dispose 里先 `surface.release()`、再 `host.detachSurface()`，而
+  // `detachSurface()` 又刻意不清播放器的 surface —— 于是 ExoPlayer 渲染线程
+  // 继续往已释放的 buffer 提交帧，native 崩溃闪退。
+  // 这四条钉住「解绑一定在 release 之前」与「布局监听一定被注销」。
+  final kotlinHandler =
+      _src('android/app/src/main/kotlin/com/shunbo/shunbo/MpvMethodHandler.kt');
+  check('解绑渲染面时必须让播放器脱离 Surface（否则 use-after-release）',
+      kotlinHandler.contains('engine?.setSurface(null)'));
+  check('原生销毁顺序：先解绑播放器，后释放 Surface',
+      _orderOf(kotlinFactory, 'host.detachSurface()', 'surface?.release()') == 1);
+  check('布局监听存成字段以便注销',
+      kotlinFactory.contains('private val layoutListener') &&
+          kotlinFactory.contains('removeOnLayoutChangeListener(layoutListener)'));
+  check('缩放对已脱离窗口的视图不再 setTransform',
+      kotlinScale.contains('if (!view.isAttachedToWindow) return'));
 }
 
 // ── E. 手机横屏双栏：右侧黑空白改为常驻频道切换区 ──────────────
@@ -450,6 +536,59 @@ void testFullscreenStageAndRightEntry() {
           page.contains('if (!compact && channel.channelLabel'));
 }
 
+// ── E. 左栏底色与右栏一致（1.0.5 用户红标）──────────────────────
+
+/// 左栏的底色走过三步：实心 `surface`（截图实测 `#121821`）→ 全透明（文字压不住
+/// 亮画面，用户回退意见）→ **与右栏同值 `AppTheme.panelScrim`（78%）**。
+///
+/// 断言分两半，缺一半就会放过另一类回退：
+///   · 值：左栏与右栏取自**同一个出口**，谁都不许各写一份 alpha；
+///   · 布局：宽度、导航项、品牌区、设置入口一个字没动。
+///
+/// 只锁「透明/半透明」的话，有人把宽度改了照样绿；只锁宽度的话，底色又会悄悄退回去。
+void testRailBackground() {
+  print('\n== E. 左栏底色与右栏统一 ==');
+  final shell = _src('lib/app/app_shell.dart');
+  final theme = _src('lib/app/theme.dart');
+  final live = _src('lib/ui/live/live_page.dart');
+
+  // ① 唯一出口：透明度的数字只允许出现在 theme.dart 一处。
+  check('透明度只在 AppTheme.panelScrim 定义一次',
+      RegExp(r'static Color get panelScrim =>\s*surface\.withValues\(alpha: 0\.78\);')
+          .hasMatch(theme));
+  check('左栏引用该出口',
+      RegExp(r'final Color _railBackground = AppTheme\.panelScrim;')
+          .hasMatch(shell));
+  check('右栏（频道栏浮层态）也引用该出口',
+      live.contains('opaque ? AppTheme.surface : AppTheme.panelScrim'));
+  // 反面：除了 theme.dart，别处不许再出现写死的 0.78。
+  check('别处不再写死 alpha 0.78',
+      !RegExp(r'withValues\(alpha: 0\.78\)')
+          .hasMatch(shell + live.replaceAll('AppTheme.panelScrim', '')));
+
+  check('电视轨（140 宽）用该常量', shell.contains("width: 140,\n      color: _railBackground,"));
+  check('浮层侧栏（184 宽）用该常量',
+      shell.contains("width: 184,\n      color: _railBackground,"));
+  // 反面：rail 的 Container 上不允许再出现实心底色（`_NavItem` 选中态的高亮
+  // 是「内容」，不在这一条的范围里，故只查紧跟 width 的那一行）。
+  check('两处 rail 都不再画实心底色',
+      !RegExp(r'width: 1(40|84),\n\s*color: AppTheme\.surface,').hasMatch(shell));
+  // 回归：全透明是**已经否掉**的方案（文字在亮画面上看不清），不许再退回去。
+  check('左栏不再是全透明',
+      !shell.contains('_railBackground = Colors.transparent'));
+
+  // 布局与内容不变：宽度、导航项顺序、品牌区、设置项都还在。
+  check('宽度未变（140 / 184）',
+      shell.contains('width: 140,') && shell.contains('width: 184,'));
+  check('导航项仍来自 AppSection，顺序未改',
+      shell.contains('for (final s in AppSection.values)') &&
+          _src('lib/app/app_shell.dart').contains("live('电视直播'"));
+  check('品牌区与设置入口仍在',
+      shell.contains('_BrandMark()') &&
+          shell.contains("'顺播'") &&
+          shell.contains("'设置'"));
+}
+
 void main() {
   testScreenPolicy();
   testLayout();
@@ -457,6 +596,7 @@ void main() {
   testVideoScaleModes();
   testLandscapeDualPane();
   testFullscreenStageAndRightEntry();
+  testRailBackground();
   print('');
   if (_fail == 0) {
     print('回归通过：$_pass/$_pass 断言通过');

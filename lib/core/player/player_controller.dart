@@ -57,6 +57,24 @@ abstract class PlayerController {
   Future<void> dispose();
 }
 
+/// 能按「点播 / 直播」切换缓冲档的内核。
+///
+/// 为什么要单独一个接口：直播与点播对缓冲的诉求是**相反**的。
+/// 直播要「尽快出画面」，前沿缓存越小越好（缓存大 = 切台后多等几秒）；
+/// 点播要「播得稳」，缓存越大越抗抖动，多等 1 秒无所谓。
+/// 1.0.4 只有一套直播档参数，点播也在用 —— 弱源上就会表现为「能播但一直卡」。
+///
+/// 做成独立接口而不是往 [PlayerController] 里加方法：Mock / 旧内核没有这些
+/// 参数，硬塞进去只能返回假成功。UI 侧用 `is PlaybackTuner` 判断即可。
+abstract interface class PlaybackTuner {
+  /// 切到点播档（大缓存 + 断线重连）。在 `load` 之前调用。
+  Future<void> applyVodProfile();
+
+  /// 恢复直播档（小缓存、快起播）。离开点播、回到直播前必须调回来，
+  /// 否则切台会慢 4–5 秒（大缓存的前沿预读）。
+  Future<void> applyLiveProfile();
+}
+
 /// 能报告「是不是真的出画面了」的内核。
 ///
 /// 为什么需要它：**直播不能用播放位置判断起播**。实测一条 1080p 公共 HLS 线路，
@@ -74,6 +92,17 @@ abstract class PlayerController {
 abstract class PictureProbe {
   /// 是否已拿到视频参数（宽高非 0）——即首帧已经进入解码/渲染。
   bool get hasPicture;
+
+  /// 当前解码出的画面宽度（像素）。未出画时为 0。
+  ///
+  /// 控制栏的清晰度徽标要显示**实测**分辨率：采集站给的 `vod_play_url` 里
+  /// 只有一个地址（`vod_play_from` 是 `dytt$$$dyttm3u8` 这种线路名，不是画质档），
+  /// 没有任何「720P / 1080P」的档位标签可读。唯一真实的画质信息就是内核
+  /// 解出来的宽高——所以徽标显示它，而不是编一个好看的档名。
+  int get pictureWidth;
+
+  /// 当前解码出的画面高度（像素）。未出画时为 0。
+  int get pictureHeight;
 
   /// 「拿到视频参数」的次数（单调递增）。
   ///
@@ -95,4 +124,29 @@ abstract class PictureProbe {
   /// 实测公共 1080p HLS 线路要重试 20 秒以上才出画面，
   /// 用固定超时去卡它会把「其实能播」的线路判死（这正是首屏黑屏的成因之一）。
   String? get lastError;
+}
+
+/// 能报告「已缓冲到哪里」的内核。
+///
+/// 控制栏的进度条要画成三段（已播 / 已缓冲未播 / 未缓冲）。中间的缓冲段不是装饰：
+/// 拖动时用户靠它判断「往前拖这么多会不会立刻卡住」——弱源上这个信息比进度本身
+/// 还有用。拿不到就整段不画，绝不编一个假位置（假缓冲会让用户以为能拖到那里）。
+///
+/// 与 [PictureProbe] 同理，做成独立接口而不是塞进 [PlayerController]：
+/// 占位内核 / 纯音频内核没有这个概念，塞进主接口只能返回假值。
+abstract interface class BufferProbe {
+  /// 已缓冲到的秒数（源原始坐标）。未知返回 0。
+  double get bufferedSeconds;
+}
+
+/// 能变速播放的内核。
+///
+/// 0.5×–2.0× 是各家播放器的通用档位。为什么单列接口而不是放进主接口：
+/// 变速依赖解码器能力，占位内核给不了，硬塞进去就是「按钮点了没反应」。
+abstract interface class PlaybackRateControl {
+  /// 设置播放倍速（会被夹到 0.25–4.0 的合法区间）。
+  Future<void> setRate(double rate);
+
+  /// 当前倍速（未设置过为 1.0）。
+  double get rate;
 }

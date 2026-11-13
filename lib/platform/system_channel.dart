@@ -73,10 +73,10 @@ class AppBuildInfo {
 /// 与 `pubspec.yaml` 的 `version:` 保持一致；原生通道不可用时（桌面端、
 /// 或未注册 `shunbo/system` 的旧包）诊断页仍能给出确定的版本号，
 /// 而不是「未知」。
-const String kAppVersionName = '1.0.4';
-// versionCode 3：签名证书未变，1.0.1 / 1.0.0 可直接覆盖升级；
-// 回退到更低 versionCode 需先卸载（1.0.4 按研发计划 PQ-1 / M4 升版）。
-const int kAppVersionCode = 5;
+const String kAppVersionName = '1.0.6';
+// versionCode 逐版递增：签名证书未变，可直接覆盖升级；
+// 回退到更低 versionCode 需先卸载（1.0.6 按用户指令归入本版本）。
+const int kAppVersionCode = 7;
 const String kAppIdFull = 'com.shunbo.tv';
 const String kAppIdLite = 'com.shunbo.tv.lite';
 

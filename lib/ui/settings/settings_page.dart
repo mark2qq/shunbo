@@ -9,6 +9,7 @@ import '../../app/theme.dart';
 import '../../core/player/player_bootstrap.dart';
 import '../../platform/version_compat.dart';
 import 'channel_section.dart';
+import 'vod_source_section.dart';
 import '../../features/vod/vod_catalog.dart';
 
 /// 设置页。
@@ -198,6 +199,14 @@ class _SettingsPageState extends State<SettingsPage> {
                 '内置片库只包含可公开分发的素材（Blender 开源影片、公开示例视频），'
                 '随包分发不涉及授权问题。接入自有片源请走「高级工具」里的源配置导入。',
               ),
+            ],
+          ),
+          // 1.0.5：G1 开放接口默认关闭；这一区块不启用时零外部请求，
+          // 点播行为与 1.0.4 完全一致。
+          _Section(
+            title: '点播源',
+            children: [
+              VodSourceAddressSection(services: s),
             ],
           ),
           if (widget.advancedBuilder != null)

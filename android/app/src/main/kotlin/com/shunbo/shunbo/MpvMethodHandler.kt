@@ -58,9 +58,16 @@ class MpvMethodHandler(
     }
 
     fun detachSurface() {
+        // 必须先把播放器从这个 Surface 上摘下来，再允许调用方 release。
+        // 顺序反了就是 use-after-release：ExoPlayer 的渲染线程会继续往已经
+        // `Surface.release()` 过的 buffer 提交帧，native 侧直接 SIGSEGV ——
+        // 现象正是「播放中点返回上一级，系统崩溃闪退」。
+        //
+        // 旧实现只把字段置空、注释说「真正的释放由 dispose 负责」，但 dispose
+        // 也从未调用过 `setSurface(null)`，于是播放器一直持有已释放的 Surface。
+        // 这里改成主动解绑：换集时 `attachSurface` 会重新补上，不影响续播。
+        engine?.setSurface(null)
         surface = null
-        // 不清 player 的 surface：Dart 侧可能正在换集，重新 attach 时会补上。
-        // 真正的释放由 dispose 负责。
     }
 
     private fun ensureEngine(): ExoPlayerEngine {

@@ -34,6 +34,11 @@ target_compile_definitions(${BINARY_NAME} PRIVATE "NOMINMAX")
 # dependencies here.
 target_link_libraries(${BINARY_NAME} PRIVATE flutter flutter_wrapper_app)
 target_link_libraries(${BINARY_NAME} PRIVATE "dwmapi.lib")
+# shell32: 窗口样式/位置相关（SetWindowPlacement 的辅助常量与 shell 交互）。
+# ole32:  CoCreateInstance，用于 ITaskbarList2（真全屏时让任务栏让位）。
+# user32: GetMonitorInfo / MonitorFromWindow / SetWindowLong（默认已隐式链接，
+#          这里显式列出，避免 /NODEFAULTLIB 场景下悄悄变成未解析符号）。
+target_link_libraries(${BINARY_NAME} PRIVATE "shell32.lib" "ole32.lib" "user32.lib")
 target_include_directories(${BINARY_NAME} PRIVATE "${CMAKE_SOURCE_DIR}")
 
 # Run the Flutter tool portions of the build. This must not be removed.

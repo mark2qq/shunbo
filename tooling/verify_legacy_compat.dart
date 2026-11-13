@@ -466,8 +466,8 @@ void main() {
           has(buildPy, '"探测失败", 30, False, "legacyCompat"'));
 
   // --------------------------------------------- I 主程序隔离
-  check('I01 主程序版本升到 1.0.4+5（与单包同号）',
-      has(read('pubspec.yaml'), 'version: 1.0.4+5'));
+  check('I01 主程序版本升到 1.0.6+7（1.0.4 产物留在 dist/ 作回退基线）',
+      has(read('pubspec.yaml'), 'version: 1.0.6+7'));
   check('I02 主程序 minSdk 仍是 24（未被兼容分支伪装改小）',
       has(read('android/app/build.gradle.kts'), 'minSdk'));
   check('I03 Flutter 播放器装配不含 legacyCompat 护栏',
@@ -703,8 +703,17 @@ void main() {
         (sr['dexOrder'] as List).join(',') ==
             'classes.dex,classes2.dex,classes3.dex',
         '${sr['dexOrder']}');
-    check('N09 单包版本 1.0.4（code 5）',
-        sr['versionName'] == '1.0.4' && sr['versionCode'] == 5);
+    // 这份报告是「最近一次单包组装」的产物，每出一版都会被覆盖。锁死某个历史
+    // 版本号会在升版后误报（1.0.5 出包前它恰好是 1.0.4，才侥幸通过）。这里锁的是
+    // 「出包参数与 pubspec 同源」：忘记传 --version-name / --version-code 会立刻失败。
+    final pubV = RegExp(r'^version:\s*([0-9]+\.[0-9]+\.[0-9]+)\+(\d+)\s*$',
+            multiLine: true)
+        .firstMatch(read('pubspec.yaml'));
+    check('N09 单包版本与 pubspec 同源（当前 1.0.6 / code 7）',
+        pubV != null &&
+            sr['versionName'] == pubV.group(1) &&
+            sr['versionCode'] == int.parse(pubV.group(2)!),
+        '报告=${sr['versionName']}/${sr['versionCode']}');
     check('N10 两个入口都指向分流路由',
         sr['launchable'] == 'com.shunbo.legacy.RouterActivity' &&
             sr['leanbackLaunchable'] == sr['launchable']);

@@ -199,9 +199,19 @@ void testSources() {
   // 断言写成「允许任意缩进」而不是逐字匹配：这一层后来被 PopScope/LayoutBuilder
   // 包住，整体缩进右移了两格，文字匹配就会误报「功能坏了」。
   // 要校验的是「全屏时提前 return，不落到浮层分支」这个语义，不是空格数。
-  check('全屏时左侧浮层整体不渲染',
-      RegExp(r'if \(_fullscreen\) \{\s*return Scaffold\(body: content\);\s*\}')
-          .hasMatch(shell));
+  // 全屏时不渲染左侧浮层 —— 但**不能靠另起一棵树**。
+  //
+  // 1.0.5 第十二次修：旧写法 `if (_fullscreen) return Scaffold(body: content);`
+  // 会在切换全屏时把 content 的父链/槽位/类型全换掉，Flutter 无法复用 Element，
+  // 整棵子树 unmount ⇒ 页面 State 丢失 ⇒ 用户看到「点全屏却退回了上一级」。
+  // 现在改成**骨架恒定**：宽屏恒为 Stack，只条件渲染侧栏兄弟节点。
+  // 因此这里校验的是「全屏时左侧浮层不出现」这个结果，以及「不再另起树」这个前提。
+  check('全屏时左侧浮层整体不渲染（且不靠另起一棵树实现）',
+      !RegExp(r'^\s*if \(_fullscreen\) \{\s*return Scaffold\(body: content\);',
+              multiLine: true)
+          .hasMatch(shell) &&
+          RegExp(r'Positioned\.fill\(child: content\),').hasMatch(shell) &&
+          RegExp(r'if \(!_fullscreen\)\s*\n\s*if \(tv\)').hasMatch(shell));
   // 全屏仍不渲染「通用浮层」：手机横屏改走专门的全屏舞台（画面铺满 +
   // 右侧常驻频道入口/抽屉），桌面/TV 依旧是纯画面，左侧浮层绝不出现。
   check('全屏时右侧通用浮层整体不渲染',
@@ -217,8 +227,11 @@ void testSources() {
   // 全屏则整块不渲染。三处分支各司其职，数量变化必须被人看见。
   check('右侧浮层只在宽屏与窄屏横屏两处渲染',
       '_buildRailOverlay(c,'.allMatches(page).length == 2);
-  check('窄屏底栏导航未受影响',
-      shell.contains('bottomNavigationBar: NavigationBar('));
+  // 窄屏底栏仍在，但**只把值传 null**，不换掉槽位（同「全屏不另起树」的理由：
+  // 换槽位 = 换父链 = Element 无法复用 = State 丢失）。
+  check('窄屏底栏导航未受影响（全屏只置空槽位值，槽位本身保留）',
+      RegExp(r'bottomNavigationBar: _fullscreen\s*\n\s*\? null\s*\n\s*: NavigationBar\(')
+          .hasMatch(shell));
   check('窄屏频道栏仍为上下布局',
       RegExp(r'Expanded\(child: _buildRailInner\(c, inline: true\)\)').hasMatch(page));
 }

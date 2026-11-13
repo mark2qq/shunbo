@@ -259,11 +259,11 @@ void main() {
       sys.contains("probeOk: source != 'probe-failed'"));
   check('G13 编译期兜底不伪造设备版本',
       sys.contains('sdkIntRaw: null') && sys.contains("release: 'unknown'"));
-  // 版本号由用户决定（1.0.4 / +5 按研发计划 PQ-1 / M4 升版）。这里锁的是「常量与 pubspec 同源」，
+  // 版本号由用户决定（1.0.6 / +7 按用户指令归入本版本）。这里锁的是「常量与 pubspec 同源」，
   // 不是锁死某个具体数字为永久值；更早产物仍保留在 dist/ 作回退基线（R12）。
-  check('G14 兜底版本常量与当前发布版本同源（1.0.4 / +5）',
-      sys.contains("kAppVersionName = '1.0.4'") &&
-          RegExp(r'kAppVersionCode\s*=\s*5\s*;').hasMatch(sys));
+  check('G14 兜底版本常量与当前发布版本同源（1.0.6 / +7）',
+      sys.contains("kAppVersionName = '1.0.6'") &&
+          RegExp(r'kAppVersionCode\s*=\s*7\s*;').hasMatch(sys));
   check('G15 main 启动时决策一次并锁存',
       mainDart.contains('CompatBranchSelector().select(') &&
           mainDart.contains('buildInfo.compatDecision(isAndroid: Platform.isAndroid)'));
@@ -317,8 +317,8 @@ void main() {
   check('G35 v1+v2 双签未被回退',
       gradle.contains('enableV1Signing = true') &&
           gradle.contains('enableV2Signing = true'));
-  check('G36 pubspec 版本与发布版本一致（1.0.4+5）',
-      RegExp(r'^version:\s*1\.0\.4\+5\s*$', multiLine: true).hasMatch(pub));
+  check('G36 pubspec 版本与发布版本一致（1.0.6+7）',
+      RegExp(r'^version:\s*1\.0\.6\+7\s*$', multiLine: true).hasMatch(pub));
 
   // ── H. 探针构建产物：重建后的分支自检表与一致性结论 ────────────────────
   final reportPath = '../.apk_analysis/device_probe/probe_build_report.json';

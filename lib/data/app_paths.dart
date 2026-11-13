@@ -27,6 +27,15 @@ class AppPaths {
   static const String channelNumbersFile = 'channel-numbers.json';
   static const String livePreferredFile = 'live-preferred.json';
 
+  /// 第三方点播片库的本地缓存（1.0.5 第三次修：冷启动秒开）。
+  static const String vodLibraryFile = 'vod-library.json';
+
+  /// 用户提交新接口后生成的片源索引目录文件（1.0.5 第十六次修）。
+  ///
+  /// 与随包的 `assets/vod_index/` 同构但落在**数据目录**，因为用户换的
+  /// 接口是运行期才知道的，不可能打包进去。后续进入点播优先读这一份。
+  static const String vodIndexFile = 'vod-index.json';
+
   /// 形态偏好（R1：自动 / 强制手机 / 强制电视）。
   static const String formFactorFile = 'form-factor.txt';
 

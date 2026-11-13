@@ -34,6 +34,49 @@ const String kSourceSignatureHeader = 'x-shunbo-signature';
 /// 签名密钥标识（可选，便于发布者轮换密钥）。
 const String kSourceKeyIdHeader = 'x-shunbo-key-id';
 
+/// 判断响应内容是网页而非接口数据。纯函数，便于门禁直接回归。
+///
+/// 存在的理由：点播源要的是 JSON。实测「影视仓官方入口」返回 277 KB HTML，
+/// 走原路径会先撞 256 KB 字节上限，报一句「配置超过 256 KB 上限」——
+/// 用户会以为换个地址就行，真实原因却是这条地址压根不是接口。
+/// 先看 Content-Type，再看正文首字符（有些站点把网页写成 text/plain）。
+/// **正文优先，Content-Type 只作兜底**。苹果 CMS 采集站实测大量返回
+/// `Content-Type: text/html;charset=utf-8`，正文却是合法 JSON（老 PHP 站点的
+/// 默认头）；只看头会把 12 个能用的站点全判成网页直接跳过。
+bool isHtmlLikePayload({String? contentType, String? bodyPrefix}) {
+  var head = (bodyPrefix ?? '');
+  if (head.startsWith('\uFEFF')) head = head.substring(1);
+  head = head.trimLeft();
+  if (head.isNotEmpty) {
+    // JSON 的顶层只可能是 `{` / `[`；出现 `<` 就是 HTML / XML 说明页。
+    if (head.startsWith('<')) return true;
+    // 正文已经明确是 JSON ⇒ 无论头写什么都不是网页。
+    if (head.startsWith('{') || head.startsWith('[')) return false;
+  }
+  final ct = (contentType ?? '').toLowerCase();
+  return ct.contains('text/html') || ct.contains('application/xhtml');
+}
+
+/// 取正文里第一个「有意义的」字节（跳过 UTF-8 BOM 与空白），没有则返回 null。
+///
+/// 只用于流式早期判定网页：读满 256 KB 才发现是 HTML 的话，报错就成了
+/// 「超过上限」而不是「这是网页」，用户会以为换个地址就行。
+int? firstSignificantByte(List<int> bytes) {
+  var i = 0;
+  if (bytes.length >= 3 &&
+      bytes[0] == 0xEF &&
+      bytes[1] == 0xBB &&
+      bytes[2] == 0xBF) {
+    i = 3;
+  }
+  for (; i < bytes.length; i++) {
+    final b = bytes[i];
+    if (b == 0x20 || b == 0x09 || b == 0x0A || b == 0x0D) continue;
+    return b;
+  }
+  return null;
+}
+
 /// 失败原因（UI 需要据此给出可执行提示，而不是一句「导入失败」）。
 enum SourceConfigUrlFailure {
   /// 地址为空。
@@ -65,6 +108,12 @@ enum SourceConfigUrlFailure {
 
   /// 不是合法 UTF-8。
   notUtf8,
+
+  /// 服务器返回的是网页（HTML），不是接口数据。
+  ///
+  /// 只在调用方显式要求「必须是 JSON」时才会出现（1.0.5 点播源链路）。
+  /// 1.0.4 的 E9 导入不受影响：那边仍按原逻辑下载后再由内容校验器判定。
+  htmlPage,
 
   /// 连接或读取超时。
   timeout,
@@ -137,6 +186,14 @@ Future<SourceConfigUrlResult> fetchSourceConfigUrl(
   Duration timeout = const Duration(seconds: 10),
   int maxBytes = kMaxSourceConfigBytes,
   bool useSystemProxy = true,
+  // 1.0.5 G1：仅当用户在点播源设置里显式打开「允许明文 http」时才为 true。
+  // 默认 false ⇒ 1.0.4 的 E9 链接导入策略逐字不变。
+  bool allowInsecureHttp = false,
+  // 1.0.5 G1：点播源要的是**接口 JSON**，不是网页。为 true 时，响应头写着
+  // text/html 或正文以 `<` 开头就立刻判定「这是网页」并给出准确原因，
+  // 而不是让 277 KB 的网页撑到字节上限、报一句「超过 256 KB 上限」。
+  // 默认 false ⇒ 1.0.4 的 E9 链路完全不受影响。
+  bool rejectHtml = false,
 }) async {
   final trimmed = rawUrl.trim();
   if (trimmed.isEmpty) {
@@ -161,9 +218,12 @@ Future<SourceConfigUrlResult> fetchSourceConfigUrl(
     return const SourceConfigUrlResult.fail(
         SourceConfigUrlFailure.userInfo, '链接不能内联账号密码，请改用公开地址');
   }
-  if (parsed.scheme == 'http' && !isLoopbackHost(parsed.host)) {
+  if (parsed.scheme == 'http' &&
+      !isLoopbackHost(parsed.host) &&
+      !allowInsecureHttp) {
     return SourceConfigUrlResult.fail(SourceConfigUrlFailure.insecureTransport,
-        '拒绝明文 http 下载源配置（会被中间人替换）；请使用 https，或改为本地文件导入');
+        '拒绝明文 http 下载源配置（会被中间人替换）；请使用 https，'
+        '或在「点播源」里显式打开允许明文 http，或改为本地文件导入');
   }
 
   final own = client == null;
@@ -173,7 +233,8 @@ Future<SourceConfigUrlResult> fetchSourceConfigUrl(
 
   final deadline = Stopwatch()..start();
   try {
-    return await _get(c, parsed, parsed, maxBytes, timeout, deadline, 0);
+    return await _get(c, parsed, parsed, maxBytes, timeout, deadline, 0,
+        rejectHtml);
   } on TimeoutException {
     return SourceConfigUrlResult.fail(SourceConfigUrlFailure.timeout,
         '下载超时（${timeout.inSeconds}s），请检查网络或改用文件导入',
@@ -205,6 +266,7 @@ Future<SourceConfigUrlResult> _get(
   Duration timeout,
   Stopwatch deadline,
   int hops,
+  bool rejectHtml,
 ) async {
   Duration left() {
     final rest = timeout - deadline.elapsed;
@@ -250,7 +312,8 @@ Future<SourceConfigUrlResult> _get(
           '重定向把 https 降级为 ${resolved.scheme}，已拒绝',
           originLabel: _label(first));
     }
-    return _get(client, resolved, first, maxBytes, timeout, deadline, hops + 1);
+    return _get(client, resolved, first, maxBytes, timeout, deadline, hops + 1,
+        rejectHtml);
   }
 
   if (resp.statusCode < 200 || resp.statusCode >= 300) {
@@ -259,6 +322,11 @@ Future<SourceConfigUrlResult> _get(
         '服务器返回 ${resp.statusCode}，无法作为配置来源',
         originLabel: _label(first));
   }
+
+  // 网页判定放到正文里做（见下方读取循环），**不能只看响应头**：
+  // 采集站普遍返回 `Content-Type: text/html` 却给的是 JSON，
+  // 只看头会把可用站点全部误杀。也不再等整页读完才判 —— 首块到达就判，
+  // 277 KB 的说明页因此不会先撞 256 KB 字节上限报错。
 
   // 只在最终 2xx 上采集签名相关响应头；重定向响应头一律不采，
   // 避免「中间跳给一个签名、终点内容却是别的」这类混淆。
@@ -275,8 +343,23 @@ Future<SourceConfigUrlResult> _get(
 
   final bytes = <int>[];
   var total = 0;
+  var firstByteChecked = false;
   await for (final chunk in resp.timeout(left())) {
     total += chunk.length;
+    // 首块到达就判「是不是网页」，不看 Content-Type（采集站会写错）。
+    if (rejectHtml && !firstByteChecked) {
+      final lead = firstSignificantByte(<int>[...bytes, ...chunk]);
+      if (lead != null) {
+        firstByteChecked = true;
+        if (lead == 0x3C /* '<' */) {
+          await _drain(resp);
+          return SourceConfigUrlResult.fail(SourceConfigUrlFailure.htmlPage,
+              '服务器返回的是网页（HTML），不是点播接口数据；'
+              '这条地址更像接口分发站 / 说明页，请改用返回 JSON 的采集接口地址',
+              originLabel: _label(first));
+        }
+      }
+    }
     if (total > maxBytes) {
       await _drain(resp);
       return SourceConfigUrlResult.fail(SourceConfigUrlFailure.tooLarge,
@@ -309,6 +392,14 @@ Future<SourceConfigUrlResult> _get(
   if (text.trim().isEmpty) {
     return SourceConfigUrlResult.fail(SourceConfigUrlFailure.binary,
         '下载内容为空', originLabel: _label(first));
+  }
+  // 兜底：有些站点把网页的 Content-Type 写成 text/plain 甚至不给。JSON 的
+  // 顶层只可能是 `{` / `[`，出现 `<` 就一定是 HTML / XML 说明页。
+  if (rejectHtml && isHtmlLikePayload(bodyPrefix: text)) {
+    return SourceConfigUrlResult.fail(SourceConfigUrlFailure.htmlPage,
+        '服务器返回的是网页 / XML（正文以 `<` 开头），不是点播接口数据；'
+        '请改用返回 JSON 的采集接口地址',
+        originLabel: _label(first));
   }
   return SourceConfigUrlResult.ok(
     text: text,
